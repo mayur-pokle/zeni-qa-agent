@@ -1,0 +1,11 @@
+.git
+.gitignore
+.next
+node_modules
+dev.db
+data
+reports
+monitoring/artifacts
+test-results
+playwright-report
+*.log

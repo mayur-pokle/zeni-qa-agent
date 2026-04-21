@@ -1,0 +1,135 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Environment {
+  STAGING
+  PRODUCTION
+}
+
+enum ProjectStatus {
+  HEALTHY
+  WARNING
+  DOWN
+}
+
+enum RunStatus {
+  PASSED
+  FAILED
+  WARNING
+  RUNNING
+}
+
+model User {
+  id            String          @id @default(cuid())
+  email         String          @unique
+  createdAt     DateTime        @default(now())
+  projects      Project[]
+  alertSettings AlertSettings?
+}
+
+model Project {
+  id               String        @id @default(cuid())
+  name             String
+  slug             String        @unique
+  stagingUrl       String?
+  productionUrl    String
+  monitoringActive Boolean       @default(true)
+  monitoringIntervalMinutes Int  @default(360)
+  notifyOnCompletion Boolean     @default(true)
+  status           ProjectStatus @default(HEALTHY)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  lastRunAt        DateTime?
+  performanceScore Int?
+  healthScore      Int           @default(100)
+  userId           String
+  user             User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  qaRuns           QaRun[]
+  uptimeLogs       UptimeLog[]
+  errorLogs        ErrorLog[]
+  lighthouseReports LighthouseReport[]
+
+  @@index([userId, createdAt])
+  @@index([monitoringActive, status])
+}
+
+model QaRun {
+  id               String      @id @default(cuid())
+  projectId        String
+  project          Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  environment      Environment
+  status           RunStatus
+  startedAt        DateTime    @default(now())
+  completedAt      DateTime?
+  performanceScore Int?
+  seoScore         Int?
+  accessibility    Int?
+  payload          Json
+
+  @@index([projectId, startedAt])
+}
+
+model UptimeLog {
+  id            String      @id @default(cuid())
+  projectId     String
+  project       Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  environment   Environment
+  isUp          Boolean
+  statusCode    Int?
+  responseMs    Int?
+  checkedAt     DateTime    @default(now())
+  errorDetails  String?
+
+  @@index([projectId, checkedAt])
+}
+
+model ErrorLog {
+  id          String      @id @default(cuid())
+  projectId   String
+  project     Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  environment Environment
+  source      String
+  severity    String
+  message     String
+  createdAt   DateTime    @default(now())
+}
+
+model AlertSettings {
+  id                     String   @id @default(cuid())
+  userId                 String   @unique
+  user                   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  uptimeRobotApiKey      String?
+  alertEmail             String
+  smtpHost               String
+  smtpPort               Int
+  smtpSecure             Boolean  @default(true)
+  smtpUser               String
+  smtpPassword           String
+  smtpFrom               String?
+  downtimeAlerts         Boolean  @default(true)
+  qaFailureAlerts        Boolean  @default(true)
+  performanceThreshold   Int      @default(80)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+}
+
+model LighthouseReport {
+  id                    String      @id @default(cuid())
+  projectId             String
+  project               Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  environment           Environment
+  performanceScore      Int
+  seoScore              Int
+  accessibilityScore    Int
+  bestPracticesScore    Int
+  reportPath            String
+  createdAt             DateTime    @default(now())
+
+  @@index([projectId, createdAt])
+}
