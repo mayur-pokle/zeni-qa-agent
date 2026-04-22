@@ -6,6 +6,7 @@ import { EmptyState, SectionCard, StatCard } from "@/components/cards";
 import { ProjectTable } from "@/components/project-table";
 import { getConnectionStateForApp, listProjectsForApp } from "@/lib/app-data";
 import { isAuthenticated } from "@/lib/session";
+import TestAPIButton from "@/components/TestAPIButton";
 
 export default async function DashboardPage({
   searchParams
@@ -74,6 +75,7 @@ export default async function DashboardPage({
         <StatCard label="Issues" value={issueCount} helper="Warnings or downtime active" />
         <StatCard label="Avg Perf" value={`${avgPerformance}%`} helper="Last Lighthouse aligned score" />
       </section>
+<TestAPIButton />
 
       <section className="mt-6 grid gap-6 lg:grid-cols-[300px_1fr]">
         <SectionCard title="Process Filters">
