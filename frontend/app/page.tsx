@@ -6,7 +6,7 @@ import { EmptyState, SectionCard, StatCard } from "@/components/cards";
 import { ProjectTable } from "@/components/project-table";
 import { getConnectionStateForApp, listProjectsForApp } from "@/lib/app-data";
 import { isAuthenticated } from "@/lib/session";
-import TestAPIButton from "@/components/TestAPIButton";
+import TestAPIButton from "@/components/testapibutton";
 
 export default async function DashboardPage({
   searchParams
