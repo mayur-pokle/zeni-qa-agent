@@ -20,7 +20,7 @@ export default function TestAPIButton() {
         Run Backend Test
       </button>
 
-      <pre style={{ marginTop: "10px" }}>{result}</pre>
+      <pre>{result}</pre>
     </div>
   );
 }
