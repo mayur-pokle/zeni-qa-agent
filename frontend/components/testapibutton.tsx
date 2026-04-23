@@ -6,12 +6,23 @@ export default function TestAPIButton() {
   const [result, setResult] = useState("");
 
   const runTest = async () => {
-    const API = process.env.NEXT_PUBLIC_API_URL;
+    setResult("Checking backend...");
 
-    const res = await fetch(`${API}/api/run-tests`);
-    const data = await res.json();
+    try {
+      const res = await fetch("/api/health", {
+        cache: "no-store"
+      });
+      const data = await res.json().catch(() => null);
 
-    setResult(JSON.stringify(data));
+      if (!res.ok) {
+        setResult(data?.error ?? `Backend returned HTTP ${res.status}`);
+        return;
+      }
+
+      setResult(JSON.stringify(data, null, 2));
+    } catch (error) {
+      setResult(error instanceof Error ? error.message : "Backend test failed");
+    }
   };
 
   return (

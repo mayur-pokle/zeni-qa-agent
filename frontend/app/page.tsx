@@ -1,11 +1,8 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import { LoginForm } from "@/components/login-form";
 import { Shell } from "@/components/shell";
 import { EmptyState, SectionCard, StatCard } from "@/components/cards";
 import { ProjectTable } from "@/components/project-table";
-import { getConnectionStateForApp, listProjectsForApp } from "@/lib/app-data";
-import { isAuthenticated } from "@/lib/session";
+import { listProjectsForApp } from "@/lib/app-data";
 import TestAPIButton from "@/components/testapibutton";
 
 export default async function DashboardPage({
@@ -30,7 +27,7 @@ export default async function DashboardPage({
   //       </div>
   //     </div>
   //   );
-  }
+  // }
 
   // const connectionState = await getConnectionStateForApp();
   // if (!connectionState.isComplete) {
@@ -75,7 +72,7 @@ export default async function DashboardPage({
         <StatCard label="Issues" value={issueCount} helper="Warnings or downtime active" />
         <StatCard label="Avg Perf" value={`${avgPerformance}%`} helper="Last Lighthouse aligned score" />
       </section>
-<TestAPIButton />
+      <TestAPIButton />
 
       <section className="mt-6 grid gap-6 lg:grid-cols-[300px_1fr]">
         <SectionCard title="Process Filters">

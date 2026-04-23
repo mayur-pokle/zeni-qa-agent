@@ -26,7 +26,12 @@ function buildQuery(filters: ProjectListFilters) {
 }
 
 export async function listProjectsForApp(filters: ProjectListFilters = {}) {
-  return fetchBackendJson<ProjectWithRelations[]>(`/api/projects${buildQuery(filters)}`);
+  try {
+    return await fetchBackendJson<ProjectWithRelations[]>(`/api/projects${buildQuery(filters)}`);
+  } catch (error) {
+    console.error("[frontend] unable to load projects", error);
+    return [];
+  }
 }
 
 export async function getProjectForApp(projectId: string) {
@@ -37,8 +42,25 @@ export async function getConnectionStateForApp(): Promise<{
   settings: ConnectionSettings;
   isComplete: boolean;
 }> {
-  return fetchBackendJson<{
-    settings: ConnectionSettings;
-    isComplete: boolean;
-  }>("/api/settings/connections");
+  try {
+    return await fetchBackendJson<{
+      settings: ConnectionSettings;
+      isComplete: boolean;
+    }>("/api/settings/connections");
+  } catch (error) {
+    console.error("[frontend] unable to load connection settings", error);
+    return {
+      settings: {
+        uptimeRobotApiKey: "",
+        smtpHost: "smtp.gmail.com",
+        smtpPort: "465",
+        smtpSecure: true,
+        smtpUser: "",
+        smtpPassword: "",
+        smtpFrom: "",
+        alertEmail: ""
+      },
+      isComplete: false
+    };
+  }
 }
