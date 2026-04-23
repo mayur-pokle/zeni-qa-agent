@@ -13,29 +13,29 @@ export default async function DashboardPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  if (!(await isAuthenticated())) {
-    return (
-      <div className="min-h-screen bg-[#292524] text-[#f5f5f4]">
-        <div className="mx-auto flex min-h-screen max-w-3xl items-center px-6 py-10">
-          <div className="grid w-full gap-8 border border-[#f5f5f4]/20 p-8">
-            <div className="space-y-3">
-              <p className="text-xs uppercase tracking-[0.3em] text-[#f5f5f4]/60">QA Monitor</p>
-              <h1 className="text-3xl uppercase tracking-[0.18em]">Sign In</h1>
-              <p className="max-w-xl text-sm leading-6 text-[#f5f5f4]/72">
-                Start in the control room, keep the session for 30 days if you want, then move into the connection setup flow before monitoring begins.
-              </p>
-            </div>
-            <LoginForm />
-          </div>
-        </div>
-      </div>
-    );
+  // if (!(await isAuthenticated())) {
+  //   return (
+  //     <div className="min-h-screen bg-[#292524] text-[#f5f5f4]">
+  //       <div className="mx-auto flex min-h-screen max-w-3xl items-center px-6 py-10">
+  //         <div className="grid w-full gap-8 border border-[#f5f5f4]/20 p-8">
+  //           <div className="space-y-3">
+  //             <p className="text-xs uppercase tracking-[0.3em] text-[#f5f5f4]/60">QA Monitor</p>
+  //             <h1 className="text-3xl uppercase tracking-[0.18em]">Sign In</h1>
+  //             <p className="max-w-xl text-sm leading-6 text-[#f5f5f4]/72">
+  //               Start in the control room, keep the session for 30 days if you want, then move into the connection setup flow before monitoring begins.
+  //             </p>
+  //           </div>
+  //           <LoginForm />
+  //         </div>
+  //       </div>
+  //     </div>
+  //   );
   }
 
-  const connectionState = await getConnectionStateForApp();
-  if (!connectionState.isComplete) {
-    redirect("/onboarding");
-  }
+  // const connectionState = await getConnectionStateForApp();
+  // if (!connectionState.isComplete) {
+  //   redirect("/onboarding");
+  // }
 
   const params = await searchParams;
 
