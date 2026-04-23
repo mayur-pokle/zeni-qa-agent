@@ -18,7 +18,8 @@ const ENV_NAME: Record<keyof Settings, string> = {
   smtpUser: "SMTP_USER",
   smtpPassword: "SMTP_PASS",
   smtpFrom: "SMTP_FROM",
-  alertEmail: "ALERT_EMAIL"
+  alertEmail: "ALERT_EMAIL",
+  slackWebhookUrl: "SLACK_WEBHOOK_URL"
 };
 
 function maskSecret(value: string) {
@@ -96,7 +97,7 @@ function Field({
 export function ConnectionsForm({ envDefaults }: Props) {
   const [form, setForm] = useState<Settings>(envDefaults);
   const [message, setMessage] = useState("");
-  const [pending, setPending] = useState<"uptime" | "email" | null>(null);
+  const [pending, setPending] = useState<"uptime" | "email" | "slack" | null>(null);
 
   function update<K extends keyof Settings>(name: K, value: Settings[K]) {
     setForm((prev) => ({ ...prev, [name]: value }));
@@ -107,18 +108,27 @@ export function ConnectionsForm({ envDefaults }: Props) {
     setMessage("Form reset to .env values.");
   }
 
-  async function runTest(type: "uptime" | "email") {
+  async function runTest(type: "uptime" | "email" | "slack") {
     setPending(type);
-    setMessage(type === "uptime" ? "Testing UptimeRobot..." : "Sending test email...");
+    setMessage(
+      type === "uptime"
+        ? "Testing UptimeRobot..."
+        : type === "email"
+          ? "Sending test email..."
+          : "Posting test Slack message..."
+    );
     try {
-      const response = await fetch(
-        type === "uptime" ? "/api/settings/test-uptime" : "/api/settings/test-email",
-        {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify(form)
-        }
-      );
+      const endpoint =
+        type === "uptime"
+          ? "/api/settings/test-uptime"
+          : type === "email"
+            ? "/api/settings/test-email"
+            : "/api/settings/test-slack";
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(form)
+      });
       const data = await response.json().catch(() => null);
       setMessage(data?.message ?? data?.error ?? "Test finished.");
     } catch (error) {
@@ -265,6 +275,36 @@ export function ConnectionsForm({ envDefaults }: Props) {
             className="ui-button"
           >
             {pending === "email" ? "Sending..." : "Send Test Email"}
+          </button>
+        </div>
+      </section>
+
+      <section className="grid gap-4 border-t border-[#f5f5f4]/10 pt-6">
+        <div>
+          <p className="text-xs uppercase tracking-[0.3em] text-[#f5f5f4]/60">Step 3</p>
+          <h3 className="mt-2 text-lg uppercase tracking-[0.18em]">Slack</h3>
+          <p className="mt-2 text-sm leading-6 text-[#f5f5f4]/72">
+            Optional. When set, alerts are also posted to the Slack Incoming Webhook URL.
+          </p>
+        </div>
+        <Field
+          label="Slack Webhook URL"
+          name="slackWebhookUrl"
+          type="password"
+          secret
+          value={form.slackWebhookUrl}
+          envValue={envDefaults.slackWebhookUrl}
+          onChange={update}
+          placeholder="https://hooks.slack.com/services/..."
+        />
+        <div>
+          <button
+            type="button"
+            onClick={() => runTest("slack")}
+            disabled={pending === "slack"}
+            className="ui-button"
+          >
+            {pending === "slack" ? "Posting..." : "Send Test Slack Message"}
           </button>
         </div>
       </section>

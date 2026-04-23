@@ -11,6 +11,7 @@ export type ConnectionStatus = {
     smtpPassword: string;
     smtpFrom: string;
     alertEmail: string;
+    slackWebhookUrl: string;
   };
   isComplete: boolean;
 };
@@ -69,7 +70,8 @@ export async function getConnectionStateForApp(): Promise<ConnectionStatus> {
         smtpUser: "",
         smtpPassword: "",
         smtpFrom: "",
-        alertEmail: ""
+        alertEmail: "",
+        slackWebhookUrl: ""
       },
       isComplete: false
     };

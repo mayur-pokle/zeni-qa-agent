@@ -1,6 +1,36 @@
 import nodemailer from "nodemailer";
 import { readConnectionSettings } from "@/lib/app-settings";
 
+export async function sendSlackAlert(input: {
+  projectName: string;
+  title: string;
+  body: string;
+  webhookUrl?: string;
+}) {
+  const settings = readConnectionSettings();
+  const url = (input.webhookUrl ?? settings.slackWebhookUrl ?? "").trim();
+
+  if (!url) {
+    return { skipped: true, reason: "no webhook url" };
+  }
+
+  const text = `*${input.title}*\n_${input.projectName}_\n${input.body}`;
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ text }),
+    cache: "no-store"
+  });
+
+  if (!response.ok) {
+    const detail = await response.text().catch(() => "");
+    throw new Error(`Slack webhook returned HTTP ${response.status}${detail ? `: ${detail}` : ""}`);
+  }
+
+  return { skipped: false };
+}
+
 export async function sendAlertEmail(input: {
   projectName: string;
   subject: string;
