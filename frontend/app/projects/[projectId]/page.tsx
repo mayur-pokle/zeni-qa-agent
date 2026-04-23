@@ -4,10 +4,9 @@ import { Shell } from "@/components/shell";
 import { ProjectActions } from "@/components/project-actions";
 import { SectionCard, StatCard, StatusPill, TimelineRow } from "@/components/cards";
 import { QaProcessCard } from "@/components/qa-process-card";
-import { getConnectionStateForApp, getProjectForApp } from "@/lib/app-data";
+import { getProjectForApp } from "@/lib/app-data";
 import { formatDate } from "@/lib/utils";
 import { requireAuthenticatedRoute } from "@/lib/session";
-import { redirect } from "next/navigation";
 
 export default async function ProjectDetailPage({
   params
@@ -16,10 +15,6 @@ export default async function ProjectDetailPage({
 }) {
   const { projectId } = await params;
   await requireAuthenticatedRoute();
-  const connectionState = await getConnectionStateForApp();
-  if (!connectionState.isComplete) {
-    redirect("/onboarding");
-  }
   const project = await getProjectForApp(projectId);
 
   if (!project) {

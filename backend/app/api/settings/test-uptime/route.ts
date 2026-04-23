@@ -1,10 +1,14 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
+import { readConnectionSettings } from "@/lib/app-settings";
 
-export async function POST(request: NextRequest) {
-  const body = await request.json();
+export async function POST() {
+  const { uptimeRobotApiKey } = readConnectionSettings();
 
-  if (!body.uptimeRobotApiKey) {
-    return NextResponse.json({ error: "Enter an UptimeRobot API key first." }, { status: 400 });
+  if (!uptimeRobotApiKey) {
+    return NextResponse.json(
+      { error: "UPTIMEROBOT_API_KEY is not set in the backend environment." },
+      { status: 400 }
+    );
   }
 
   const response = await fetch("https://api.uptimerobot.com/v2/getMonitors", {
@@ -13,7 +17,7 @@ export async function POST(request: NextRequest) {
       "content-type": "application/x-www-form-urlencoded"
     },
     body: new URLSearchParams({
-      api_key: String(body.uptimeRobotApiKey),
+      api_key: uptimeRobotApiKey,
       format: "json"
     }),
     cache: "no-store"
@@ -21,6 +25,14 @@ export async function POST(request: NextRequest) {
 
   if (!response.ok) {
     return NextResponse.json({ error: `UptimeRobot returned HTTP ${response.status}` }, { status: 400 });
+  }
+
+  const payload = await response.json().catch(() => null);
+  if (payload?.stat !== "ok") {
+    return NextResponse.json(
+      { error: `UptimeRobot rejected the API key: ${payload?.error?.message ?? "unknown error"}` },
+      { status: 400 }
+    );
   }
 
   return NextResponse.json({ message: "UptimeRobot connection succeeded." });

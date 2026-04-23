@@ -1,6 +1,19 @@
-import type { ConnectionSettings } from "@/lib/app-settings";
 import { fetchBackendJson } from "@/lib/backend";
 import type { ProjectListFilters, ProjectWithRelations } from "@/lib/types";
+
+export type ConnectionStatus = {
+  settings: {
+    uptimeRobotApiKey: string;
+    smtpHost: string;
+    smtpPort: string;
+    smtpSecure: boolean;
+    smtpUser: string;
+    smtpPassword: string;
+    smtpFrom: string;
+    alertEmail: string;
+  };
+  isComplete: boolean;
+};
 
 function buildQuery(filters: ProjectListFilters) {
   const params = new URLSearchParams();
@@ -38,23 +51,21 @@ export async function getProjectForApp(projectId: string) {
   return fetchBackendJson<ProjectWithRelations>(`/api/projects/${projectId}`);
 }
 
-export async function getConnectionStateForApp(): Promise<{
-  settings: ConnectionSettings;
-  isComplete: boolean;
-}> {
+/**
+ * Reports whether the backend's environment is fully configured
+ * (UptimeRobot + SMTP). Secrets are redacted server-side.
+ */
+export async function getConnectionStateForApp(): Promise<ConnectionStatus> {
   try {
-    return await fetchBackendJson<{
-      settings: ConnectionSettings;
-      isComplete: boolean;
-    }>("/api/settings/connections");
+    return await fetchBackendJson<ConnectionStatus>("/api/settings/connections");
   } catch (error) {
     console.error("[frontend] unable to load connection settings", error);
     return {
       settings: {
         uptimeRobotApiKey: "",
-        smtpHost: "smtp.gmail.com",
-        smtpPort: "465",
-        smtpSecure: true,
+        smtpHost: "",
+        smtpPort: "",
+        smtpSecure: false,
         smtpUser: "",
         smtpPassword: "",
         smtpFrom: "",

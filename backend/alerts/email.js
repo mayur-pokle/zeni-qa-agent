@@ -1,44 +1,24 @@
 const nodemailer = require("nodemailer");
-const { PrismaClient } = require("@prisma/client");
 
-const prisma = new PrismaClient();
+function stripSpaces(value) {
+  return String(value || "").replace(/\s+/g, "");
+}
 
-async function readSettings() {
-  const email = process.env.DEMO_USER_EMAIL || "owner@example.com";
-  const user = await prisma.user.upsert({
-    where: { email },
-    update: {},
-    create: { email }
-  });
-
-  const settings = await prisma.alertSettings.findUnique({
-    where: { userId: user.id }
-  });
-
-  if (!settings) {
-    return {};
-  }
-
-  return {
-    uptimeRobotApiKey: settings.uptimeRobotApiKey || "",
-    smtpHost: settings.smtpHost || "",
-    smtpPort: String(settings.smtpPort || 465),
-    smtpSecure: settings.smtpSecure,
-    smtpUser: settings.smtpUser || "",
-    smtpPassword: settings.smtpPassword || "",
-    smtpFrom: settings.smtpFrom || "",
-    alertEmail: settings.alertEmail || ""
-  };
+function parseSecure(raw, port) {
+  if (raw === undefined) return port === 465;
+  const lowered = String(raw).toLowerCase();
+  if (lowered === "true" || lowered === "1" || lowered === "yes") return true;
+  if (lowered === "false" || lowered === "0" || lowered === "no") return false;
+  return port === 465;
 }
 
 async function sendEmailAlert({ subject, text, attachments = [] }) {
-  const settings = await readSettings();
-  const host = settings.smtpHost || process.env.SMTP_HOST;
-  const port = Number(settings.smtpPort || process.env.SMTP_PORT || 465);
-  const secure = Boolean(settings.smtpSecure) || port === 465;
-  const user = settings.smtpUser || process.env.SMTP_USER;
-  const pass = String(settings.smtpPassword || process.env.SMTP_PASS || "").replace(/\s+/g, "");
-  const to = settings.alertEmail || process.env.DEMO_USER_EMAIL;
+  const host = process.env.SMTP_HOST || "smtp.gmail.com";
+  const port = Number(process.env.SMTP_PORT || 465);
+  const secure = parseSecure(process.env.SMTP_SECURE, port);
+  const user = process.env.SMTP_USER;
+  const pass = stripSpaces(process.env.SMTP_PASS);
+  const to = process.env.ALERT_EMAIL || process.env.SMTP_USER || process.env.DEMO_USER_EMAIL;
 
   if (!host || !user || !pass || !to) {
     return { skipped: true };
@@ -54,7 +34,7 @@ async function sendEmailAlert({ subject, text, attachments = [] }) {
   await transporter.verify();
 
   await transporter.sendMail({
-    from: settings.smtpFrom || process.env.SMTP_FROM || user,
+    from: process.env.SMTP_FROM || user,
     to,
     subject,
     text,

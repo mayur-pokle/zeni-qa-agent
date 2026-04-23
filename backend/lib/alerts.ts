@@ -1,5 +1,4 @@
 import nodemailer from "nodemailer";
-import { env } from "@/lib/env";
 import { readConnectionSettings } from "@/lib/app-settings";
 
 export async function sendAlertEmail(input: {
@@ -11,33 +10,28 @@ export async function sendAlertEmail(input: {
     content: string | Buffer;
   }>;
 }) {
-  const settings = await readConnectionSettings();
-  const host = settings.smtpHost || env.SMTP_HOST;
-  const port = Number(settings.smtpPort || env.SMTP_PORT);
-  const secure = Boolean(settings.smtpSecure) || port === 465;
-  const userName = settings.smtpUser || env.SMTP_USER;
-  const password = (settings.smtpPassword || env.SMTP_PASS || "").replace(/\s+/g, "");
-  const to = settings.alertEmail || env.DEMO_USER_EMAIL;
+  const settings = readConnectionSettings();
+  const port = Number(settings.smtpPort);
 
-  if (!host || !port || !userName || !password) {
+  if (!settings.smtpHost || !port || !settings.smtpUser || !settings.smtpPassword || !settings.alertEmail) {
     return { skipped: true };
   }
 
   const transporter = nodemailer.createTransport({
-    host,
+    host: settings.smtpHost,
     port,
-    secure,
+    secure: settings.smtpSecure,
     auth: {
-      user: userName,
-      pass: password
+      user: settings.smtpUser,
+      pass: settings.smtpPassword
     }
   });
 
   await transporter.verify();
 
   await transporter.sendMail({
-    from: settings.smtpFrom || env.SMTP_FROM || userName,
-    to,
+    from: settings.smtpFrom || settings.smtpUser,
+    to: settings.alertEmail,
     subject: input.subject,
     text: `${input.projectName}\n\n${input.body}`,
     attachments: input.attachments ?? []

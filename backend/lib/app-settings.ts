@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import { env } from "@/lib/env";
 
 export type ConnectionSettings = {
   uptimeRobotApiKey: string;
@@ -11,97 +11,40 @@ export type ConnectionSettings = {
   alertEmail: string;
 };
 
-function normalizeValue(value: unknown) {
-  return String(value ?? "").trim();
-}
-
-function normalizePassword(value: unknown) {
+function normalizePassword(value: string | undefined) {
   return String(value ?? "").replace(/\s+/g, "");
 }
 
-const defaultSettings: ConnectionSettings = {
-  uptimeRobotApiKey: "",
-  smtpHost: "smtp.gmail.com",
-  smtpPort: "465",
-  smtpSecure: true,
-  smtpUser: "",
-  smtpPassword: "",
-  smtpFrom: "",
-  alertEmail: ""
-};
-
-async function getOrCreateSettingsUser() {
-  const email = process.env.DEMO_USER_EMAIL ?? "owner@example.com";
-
-  return prisma.user.upsert({
-    where: { email },
-    update: {},
-    create: { email }
-  });
+function parseSecure(raw: string | undefined, port: number) {
+  if (raw === undefined) {
+    return port === 465;
+  }
+  const lowered = raw.toLowerCase();
+  if (lowered === "true" || lowered === "1" || lowered === "yes") return true;
+  if (lowered === "false" || lowered === "0" || lowered === "no") return false;
+  return port === 465;
 }
 
-export async function readConnectionSettings(): Promise<ConnectionSettings> {
-  const user = await getOrCreateSettingsUser();
-  const settings = await prisma.alertSettings.findUnique({
-    where: { userId: user.id }
-  });
-
-  if (!settings) {
-    return defaultSettings;
-  }
+/**
+ * Read all connection settings from environment variables.
+ * The app no longer reads or writes these to the database —
+ * they are now fully managed by the deployment environment
+ * (Railway for the backend, local .env for development).
+ */
+export function readConnectionSettings(): ConnectionSettings {
+  const smtpPort = Number(env.SMTP_PORT || "465") || 465;
+  const smtpUser = (env.SMTP_USER ?? "").trim();
 
   return {
-    uptimeRobotApiKey: settings.uptimeRobotApiKey ?? "",
-    smtpHost: settings.smtpHost,
-    smtpPort: String(settings.smtpPort),
-    smtpSecure: settings.smtpSecure,
-    smtpUser: settings.smtpUser,
-    smtpPassword: settings.smtpPassword,
-    smtpFrom: settings.smtpFrom ?? "",
-    alertEmail: settings.alertEmail
+    uptimeRobotApiKey: (env.UPTIMEROBOT_API_KEY ?? "").trim(),
+    smtpHost: (env.SMTP_HOST ?? "smtp.gmail.com").trim(),
+    smtpPort: String(smtpPort),
+    smtpSecure: parseSecure(env.SMTP_SECURE, smtpPort),
+    smtpUser,
+    smtpPassword: normalizePassword(env.SMTP_PASS),
+    smtpFrom: (env.SMTP_FROM ?? "").trim(),
+    alertEmail: (env.ALERT_EMAIL ?? smtpUser ?? env.DEMO_USER_EMAIL ?? "").trim()
   };
-}
-
-export async function writeConnectionSettings(settings: ConnectionSettings) {
-  const normalizedSettings: ConnectionSettings = {
-    uptimeRobotApiKey: normalizeValue(settings.uptimeRobotApiKey),
-    smtpHost: normalizeValue(settings.smtpHost) || defaultSettings.smtpHost,
-    smtpPort: normalizeValue(settings.smtpPort) || defaultSettings.smtpPort,
-    smtpSecure: Boolean(settings.smtpSecure),
-    smtpUser: normalizeValue(settings.smtpUser),
-    smtpPassword: normalizePassword(settings.smtpPassword),
-    smtpFrom: normalizeValue(settings.smtpFrom),
-    alertEmail: normalizeValue(settings.alertEmail)
-  };
-
-  const user = await getOrCreateSettingsUser();
-
-  await prisma.alertSettings.upsert({
-    where: { userId: user.id },
-    update: {
-      uptimeRobotApiKey: normalizedSettings.uptimeRobotApiKey,
-      alertEmail: normalizedSettings.alertEmail,
-      smtpHost: normalizedSettings.smtpHost,
-      smtpPort: Number(normalizedSettings.smtpPort || 465),
-      smtpSecure: normalizedSettings.smtpSecure,
-      smtpUser: normalizedSettings.smtpUser,
-      smtpPassword: normalizedSettings.smtpPassword,
-      smtpFrom: normalizedSettings.smtpFrom || null
-    },
-    create: {
-      userId: user.id,
-      uptimeRobotApiKey: normalizedSettings.uptimeRobotApiKey,
-      alertEmail: normalizedSettings.alertEmail,
-      smtpHost: normalizedSettings.smtpHost,
-      smtpPort: Number(normalizedSettings.smtpPort || 465),
-      smtpSecure: normalizedSettings.smtpSecure,
-      smtpUser: normalizedSettings.smtpUser,
-      smtpPassword: normalizedSettings.smtpPassword,
-      smtpFrom: normalizedSettings.smtpFrom || null
-    }
-  });
-
-  return normalizedSettings;
 }
 
 export function areConnectionsConfigured(settings: ConnectionSettings) {

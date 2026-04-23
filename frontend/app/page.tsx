@@ -1,10 +1,8 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { Shell } from "@/components/shell";
 import { DashboardClient } from "@/components/dashboard-client";
 import { LoginForm } from "@/components/login-form";
 import { isAuthenticated } from "@/lib/session";
-import { getConnectionStateForApp } from "@/lib/app-data";
 
 export default async function DashboardPage({
   searchParams
@@ -20,7 +18,7 @@ export default async function DashboardPage({
               <p className="text-xs uppercase tracking-[0.3em] text-[#f5f5f4]/60">QA Monitor</p>
               <h1 className="text-3xl uppercase tracking-[0.18em]">Sign In</h1>
               <p className="max-w-xl text-sm leading-6 text-[#f5f5f4]/72">
-                Start in the control room, keep the session for 30 days if you want, then move into the connection setup flow before monitoring begins.
+                Start in the control room, keep the session for 30 days if you want, then move straight into the dashboard.
               </p>
             </div>
             <LoginForm />
@@ -28,11 +26,6 @@ export default async function DashboardPage({
         </div>
       </div>
     );
-  }
-
-  const connectionState = await getConnectionStateForApp();
-  if (!connectionState.isComplete) {
-    redirect("/onboarding");
   }
 
   const params = await searchParams;
@@ -46,7 +39,7 @@ export default async function DashboardPage({
   return (
     <Shell
       title="Dashboard"
-      description="Move each site through a clear process: connect services, register staging and production URLs, scan the sitemap, track run progress, and review uptime plus QA outcomes."
+      description="Move each site through a clear process: register staging and production URLs, scan the sitemap, track run progress, and review uptime plus QA outcomes."
       actions={
         <Link
           href="/projects/new"

@@ -1,26 +1,36 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import nodemailer from "nodemailer";
+import { readConnectionSettings } from "@/lib/app-settings";
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
-    const body = await request.json();
-    const smtpHost = String(body.smtpHost ?? "").trim();
-    const smtpPort = Number(body.smtpPort ?? 0);
-    const smtpUser = String(body.smtpUser ?? "").trim();
-    const smtpPassword = String(body.smtpPassword ?? "").replace(/\s+/g, "");
-    const smtpFrom = String(body.smtpFrom ?? "").trim();
-    const alertEmail = String(body.alertEmail ?? "").trim();
+    const settings = readConnectionSettings();
+    const {
+      smtpHost,
+      smtpPort,
+      smtpSecure,
+      smtpUser,
+      smtpPassword,
+      smtpFrom,
+      alertEmail
+    } = settings;
 
-    if (!smtpHost || !smtpPort || !smtpUser || !smtpPassword || !alertEmail) {
-      return NextResponse.json({ error: "Fill the Gmail fields first." }, { status: 400 });
+    const port = Number(smtpPort);
+
+    if (!smtpHost || !port || !smtpUser || !smtpPassword || !alertEmail) {
+      return NextResponse.json(
+        {
+          error:
+            "Gmail SMTP environment variables are not fully set (need SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, ALERT_EMAIL)."
+        },
+        { status: 400 }
+      );
     }
-
-    const secure = Boolean(body.smtpSecure) || smtpPort === 465;
 
     const transporter = nodemailer.createTransport({
       host: smtpHost,
-      port: smtpPort,
-      secure,
+      port,
+      secure: smtpSecure,
       auth: {
         user: smtpUser,
         pass: smtpPassword
@@ -36,7 +46,7 @@ export async function POST(request: NextRequest) {
       text: "SMTP connection test succeeded."
     });
 
-    return NextResponse.json({ message: "Test email sent successfully." });
+    return NextResponse.json({ message: `Test email sent to ${alertEmail}.` });
   } catch (error) {
     return NextResponse.json(
       {
