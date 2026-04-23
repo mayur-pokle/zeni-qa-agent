@@ -2,22 +2,16 @@ import { NextResponse } from "next/server";
 import { areConnectionsConfigured, readConnectionSettings } from "@/lib/app-settings";
 
 /**
- * Returns the connection status derived from environment variables.
- * Values are sourced from the deployment env (Railway) and are not
- * editable from the UI — the POST handler has been removed.
+ * Returns the connection settings sourced from environment variables.
+ * The settings page uses this to pre-fill the form with the canonical
+ * defaults from .env. Overrides entered into the form are ephemeral
+ * (passed straight into the /test-uptime and /test-email endpoints)
+ * and are never persisted server-side.
  */
 export async function GET() {
   const settings = readConnectionSettings();
   return NextResponse.json({
-    settings: redactSecrets(settings),
+    settings,
     isComplete: areConnectionsConfigured(settings)
   });
-}
-
-function redactSecrets(settings: ReturnType<typeof readConnectionSettings>) {
-  return {
-    ...settings,
-    uptimeRobotApiKey: settings.uptimeRobotApiKey ? "configured" : "",
-    smtpPassword: settings.smtpPassword ? "configured" : ""
-  };
 }

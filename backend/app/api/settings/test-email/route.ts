@@ -1,27 +1,37 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 import { readConnectionSettings } from "@/lib/app-settings";
 
-export async function POST() {
+function pick(value: unknown, fallback: string) {
+  const trimmed = String(value ?? "").trim();
+  return trimmed || fallback;
+}
+
+function pickPassword(value: unknown, fallback: string) {
+  const stripped = String(value ?? "").replace(/\s+/g, "");
+  return stripped || fallback;
+}
+
+export async function POST(request: NextRequest) {
   try {
-    const settings = readConnectionSettings();
-    const {
-      smtpHost,
-      smtpPort,
-      smtpSecure,
-      smtpUser,
-      smtpPassword,
-      smtpFrom,
-      alertEmail
-    } = settings;
+    const body = await request.json().catch(() => ({} as Record<string, unknown>));
+    const envSettings = readConnectionSettings();
 
-    const port = Number(smtpPort);
+    const smtpHost = pick(body.smtpHost, envSettings.smtpHost);
+    const smtpPortRaw = pick(body.smtpPort, envSettings.smtpPort);
+    const smtpPort = Number(smtpPortRaw);
+    const smtpUser = pick(body.smtpUser, envSettings.smtpUser);
+    const smtpPassword = pickPassword(body.smtpPassword, envSettings.smtpPassword);
+    const smtpFrom = pick(body.smtpFrom, envSettings.smtpFrom);
+    const alertEmail = pick(body.alertEmail, envSettings.alertEmail);
+    const smtpSecure =
+      body.smtpSecure === undefined ? envSettings.smtpSecure : Boolean(body.smtpSecure) || smtpPort === 465;
 
-    if (!smtpHost || !port || !smtpUser || !smtpPassword || !alertEmail) {
+    if (!smtpHost || !smtpPort || !smtpUser || !smtpPassword || !alertEmail) {
       return NextResponse.json(
         {
           error:
-            "Gmail SMTP environment variables are not fully set (need SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, ALERT_EMAIL)."
+            "Missing required Gmail SMTP values. Provide them in the form or set SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS and ALERT_EMAIL in the environment."
         },
         { status: 400 }
       );
@@ -29,7 +39,7 @@ export async function POST() {
 
     const transporter = nodemailer.createTransport({
       host: smtpHost,
-      port,
+      port: smtpPort,
       secure: smtpSecure,
       auth: {
         user: smtpUser,

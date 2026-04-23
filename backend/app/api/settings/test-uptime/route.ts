@@ -1,12 +1,17 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { readConnectionSettings } from "@/lib/app-settings";
 
-export async function POST() {
-  const { uptimeRobotApiKey } = readConnectionSettings();
+export async function POST(request: NextRequest) {
+  const body = await request.json().catch(() => ({}));
+  const envSettings = readConnectionSettings();
+
+  const uptimeRobotApiKey = String(
+    body.uptimeRobotApiKey?.trim() || envSettings.uptimeRobotApiKey
+  ).trim();
 
   if (!uptimeRobotApiKey) {
     return NextResponse.json(
-      { error: "UPTIMEROBOT_API_KEY is not set in the backend environment." },
+      { error: "No UptimeRobot API key provided and UPTIMEROBOT_API_KEY is not set in the environment." },
       { status: 400 }
     );
   }
@@ -35,5 +40,8 @@ export async function POST() {
     );
   }
 
-  return NextResponse.json({ message: "UptimeRobot connection succeeded." });
+  const monitorCount = Array.isArray(payload?.monitors) ? payload.monitors.length : 0;
+  return NextResponse.json({
+    message: `UptimeRobot connection succeeded (${monitorCount} monitor${monitorCount === 1 ? "" : "s"}).`
+  });
 }

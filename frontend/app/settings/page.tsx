@@ -1,5 +1,5 @@
 import { Shell } from "@/components/shell";
-import { ConnectionStatus } from "@/components/connection-status";
+import { ConnectionsForm } from "@/components/connections-form";
 import { getConnectionStateForApp } from "@/lib/app-data";
 import { requireAuthenticatedRoute } from "@/lib/session";
 
@@ -10,9 +10,9 @@ export default async function SettingsPage() {
   return (
     <Shell
       title="Settings"
-      description="UptimeRobot and Gmail credentials are now managed through backend environment variables (Railway). This page shows the current status and lets you verify each integration."
+      description="UptimeRobot and Gmail defaults come from the backend environment. Override any field to test with different values — changes are not persisted."
     >
-      <ConnectionStatus initialStatus={connectionState} />
+      <ConnectionsForm envDefaults={connectionState.settings} />
     </Shell>
   );
 }
