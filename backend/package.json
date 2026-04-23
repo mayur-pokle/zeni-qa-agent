@@ -30,7 +30,6 @@
     "clsx": "^2.1.1",
     "csv-stringify": "^6.5.2",
     "date-fns": "^4.1.0",
-    "express": "^5.2.1",
     "lighthouse": "^12.3.0",
     "lucide-react": "^0.511.0",
     "next": "15.5.14",
