@@ -31,6 +31,61 @@ export async function sendSlackAlert(input: {
   return { skipped: false };
 }
 
+/**
+ * Send an email via Resend's HTTP API.
+ * Resend works on Railway because it uses plain HTTPS rather than SMTP,
+ * which is blocked by Railway's outbound firewall.
+ */
+async function sendViaResend(params: {
+  apiKey: string;
+  from: string;
+  to: string;
+  subject: string;
+  text: string;
+  attachments?: Array<{ filename: string; content: string | Buffer }>;
+}) {
+  const attachments = (params.attachments ?? []).map((attachment) => ({
+    filename: attachment.filename,
+    content:
+      attachment.content instanceof Buffer
+        ? attachment.content.toString("base64")
+        : Buffer.from(attachment.content).toString("base64")
+  }));
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 15_000);
+
+  try {
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${params.apiKey}`
+      },
+      body: JSON.stringify({
+        from: params.from,
+        to: [params.to],
+        subject: params.subject,
+        text: params.text,
+        ...(attachments.length ? { attachments } : {})
+      }),
+      signal: controller.signal,
+      cache: "no-store"
+    });
+
+    if (!response.ok) {
+      const detail = await response.text().catch(() => "");
+      throw new Error(
+        `Resend returned HTTP ${response.status}${detail ? `: ${detail}` : ""}`
+      );
+    }
+
+    return response.json().catch(() => ({}));
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export async function sendAlertEmail(input: {
   projectName: string;
   subject: string;
@@ -41,8 +96,21 @@ export async function sendAlertEmail(input: {
   }>;
 }) {
   const settings = readConnectionSettings();
-  const port = Number(settings.smtpPort);
 
+  // Prefer Resend when configured — works reliably on Railway.
+  if (settings.resendApiKey && settings.alertEmail) {
+    await sendViaResend({
+      apiKey: settings.resendApiKey,
+      from: settings.smtpFrom || "QA Monitor <onboarding@resend.dev>",
+      to: settings.alertEmail,
+      subject: input.subject,
+      text: `${input.projectName}\n\n${input.body}`,
+      attachments: input.attachments
+    });
+    return { skipped: false, provider: "resend" as const };
+  }
+
+  const port = Number(settings.smtpPort);
   if (!settings.smtpHost || !port || !settings.smtpUser || !settings.smtpPassword || !settings.alertEmail) {
     return { skipped: true };
   }
@@ -54,7 +122,10 @@ export async function sendAlertEmail(input: {
     auth: {
       user: settings.smtpUser,
       pass: settings.smtpPassword
-    }
+    },
+    connectionTimeout: 15_000,
+    greetingTimeout: 15_000,
+    socketTimeout: 20_000
   });
 
   await transporter.verify();
@@ -67,5 +138,5 @@ export async function sendAlertEmail(input: {
     attachments: input.attachments ?? []
   });
 
-  return { skipped: false };
+  return { skipped: false, provider: "smtp" as const };
 }

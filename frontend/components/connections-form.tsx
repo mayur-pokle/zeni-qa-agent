@@ -19,7 +19,8 @@ const ENV_NAME: Record<keyof Settings, string> = {
   smtpPassword: "SMTP_PASS",
   smtpFrom: "SMTP_FROM",
   alertEmail: "ALERT_EMAIL",
-  slackWebhookUrl: "SLACK_WEBHOOK_URL"
+  slackWebhookUrl: "SLACK_WEBHOOK_URL",
+  resendApiKey: "RESEND_API_KEY"
 };
 
 function maskSecret(value: string) {
@@ -151,7 +152,7 @@ export function ConnectionsForm({ envDefaults }: Props) {
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div className="max-w-xl">
           <p className="text-xs uppercase tracking-[0.3em] text-[#f5f5f4]/60">Connections</p>
-          <h2 className="mt-2 text-lg uppercase tracking-[0.18em]">UptimeRobot &amp; Gmail SMTP</h2>
+          <h2 className="mt-2 text-lg uppercase tracking-[0.18em]">Alerts &amp; Integrations</h2>
           <p className="mt-2 text-sm leading-6 text-[#f5f5f4]/72">
             Values are loaded from the backend environment (<code className="font-mono text-[#f5f5f4]/90">backend/.env</code> locally, Railway variables in production).
             Edit any field to test with an override — overrides are not persisted.
@@ -200,8 +201,23 @@ export function ConnectionsForm({ envDefaults }: Props) {
       <section className="grid gap-4 border-t border-[#f5f5f4]/10 pt-6">
         <div>
           <p className="text-xs uppercase tracking-[0.3em] text-[#f5f5f4]/60">Step 2</p>
-          <h3 className="mt-2 text-lg uppercase tracking-[0.18em]">Gmail SMTP</h3>
+          <h3 className="mt-2 text-lg uppercase tracking-[0.18em]">Email Alerts</h3>
+          <p className="mt-2 text-sm leading-6 text-[#f5f5f4]/72">
+            On Railway, outbound SMTP (ports 25/465/587) is blocked. Set{" "}
+            <code className="font-mono text-[#f5f5f4]/90">RESEND_API_KEY</code> to send via Resend&apos;s HTTP API —
+            the app automatically prefers Resend when the key is present, and falls back to Gmail SMTP otherwise (works locally).
+          </p>
         </div>
+        <Field
+          label="Resend API Key (recommended)"
+          name="resendApiKey"
+          type="password"
+          secret
+          value={form.resendApiKey}
+          envValue={envDefaults.resendApiKey}
+          onChange={update}
+          placeholder="re_..."
+        />
         <div className="grid gap-4 md:grid-cols-2">
           <Field
             label="SMTP Host"
