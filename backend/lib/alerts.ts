@@ -1,10 +1,18 @@
 import nodemailer from "nodemailer";
 import { readConnectionSettings } from "@/lib/app-settings";
 
+// Minimal Block Kit shape. We only use what we need from
+// https://api.slack.com/block-kit — headers, sections, fields, context,
+// divider, and action buttons. Typed loosely as `unknown`-leaning objects
+// so callers can assemble whichever blocks they need without us having
+// to model the full Slack schema.
+export type SlackBlock = Record<string, unknown>;
+
 export async function sendSlackAlert(input: {
   projectName: string;
   title: string;
   body: string;
+  blocks?: SlackBlock[];
   webhookUrl?: string;
 }) {
   const settings = readConnectionSettings();
@@ -14,12 +22,19 @@ export async function sendSlackAlert(input: {
     return { skipped: true, reason: "no webhook url" };
   }
 
-  const text = `*${input.title}*\n_${input.projectName}_\n${input.body}`;
+  // Fallback text is what Slack shows in notifications and in clients
+  // that can't render blocks. Keep it identical to the old format so
+  // nothing regresses for users who only see the preview.
+  const fallbackText = `*${input.title}*\n_${input.projectName}_\n${input.body}`;
+
+  const payload = input.blocks
+    ? { text: fallbackText, blocks: input.blocks }
+    : { text: fallbackText };
 
   const response = await fetch(url, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ text }),
+    body: JSON.stringify(payload),
     cache: "no-store"
   });
 
@@ -42,6 +57,7 @@ async function sendViaResend(params: {
   to: string;
   subject: string;
   text: string;
+  html?: string;
   attachments?: Array<{ filename: string; content: string | Buffer }>;
 }) {
   const attachments = (params.attachments ?? []).map((attachment) => ({
@@ -67,6 +83,9 @@ async function sendViaResend(params: {
         to: [params.to],
         subject: params.subject,
         text: params.text,
+        // Resend renders `html` when present, falling back to `text` for
+        // plain-text clients and notification previews.
+        ...(params.html ? { html: params.html } : {}),
         ...(attachments.length ? { attachments } : {})
       }),
       signal: controller.signal,
@@ -90,12 +109,14 @@ export async function sendAlertEmail(input: {
   projectName: string;
   subject: string;
   body: string;
+  html?: string;
   attachments?: Array<{
     filename: string;
     content: string | Buffer;
   }>;
 }) {
   const settings = readConnectionSettings();
+  const text = `${input.projectName}\n\n${input.body}`;
 
   // Prefer Resend when configured — works reliably on Railway.
   if (settings.resendApiKey && settings.alertEmail) {
@@ -107,7 +128,8 @@ export async function sendAlertEmail(input: {
       from: settings.resendFrom || "QA Monitor <onboarding@resend.dev>",
       to: settings.alertEmail,
       subject: input.subject,
-      text: `${input.projectName}\n\n${input.body}`,
+      text,
+      html: input.html,
       attachments: input.attachments
     });
     return { skipped: false, provider: "resend" as const };
@@ -137,7 +159,8 @@ export async function sendAlertEmail(input: {
     from: settings.smtpFrom || settings.smtpUser,
     to: settings.alertEmail,
     subject: input.subject,
-    text: `${input.projectName}\n\n${input.body}`,
+    text,
+    html: input.html,
     attachments: input.attachments ?? []
   });
 

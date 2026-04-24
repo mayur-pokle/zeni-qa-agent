@@ -6,6 +6,7 @@ import { sendAlertEmail, sendSlackAlert } from "@/lib/alerts";
 import { getProject } from "@/lib/db";
 import { buildQaRunsCsv } from "@/lib/reports";
 import { slugify } from "@/lib/utils";
+import { buildQaAlert } from "@/lib/notifications";
 import { getQaProgress, STALE_PROGRESS_THRESHOLD_MS, updateQaProgress } from "@/lib/progress";
 
 // Railway's per-request timeout (~100s) isn't enough for QA runs that scan
@@ -102,25 +103,21 @@ async function runQaInBackground(projectId: string, environment: Environment) {
     const project = await getProject(projectId);
 
     if (project && (run.status !== "PASSED" || project.notifyOnCompletion)) {
+      // Assemble the structured alert payload once; both Slack Block Kit
+      // and the HTML email are derived from the same run summary so the
+      // two channels stay in lockstep.
+      const { subject, slackBlocks, slackFallback, emailHtml, emailText } = buildQaAlert({
+        run,
+        project,
+        environment
+      });
       const csv = buildQaRunsCsv([run]);
-      const subject =
-        run.status !== "PASSED"
-          ? `[QA Alert] ${project.name} ${environment} ${run.status}`
-          : `[QA Report] ${project.name} ${environment} completed`;
-      const body = [
-        `QA run finished with status ${run.status}.`,
-        `Performance score: ${run.performanceScore ?? "N/A"}.`,
-        `SEO score: ${run.seoScore ?? "N/A"}.`,
-        `Accessibility score: ${run.accessibility ?? "N/A"}.`,
-        project.notifyOnCompletion ? "CSV report attached." : ""
-      ]
-        .filter(Boolean)
-        .join(" ");
 
       await sendAlertEmail({
         projectName: project.name,
         subject,
-        body,
+        body: emailText,
+        html: emailHtml,
         attachments: project.notifyOnCompletion
           ? [
               {
@@ -134,10 +131,13 @@ async function runQaInBackground(projectId: string, environment: Environment) {
       });
 
       // Fan out to Slack in parallel; never fail the run on Slack errors.
+      // Slack webhooks can't attach files, so the Block Kit payload
+      // embeds a "Download CSV" button that points at /api/reports/{id}.
       sendSlackAlert({
         projectName: project.name,
         title: subject,
-        body
+        body: slackFallback,
+        blocks: slackBlocks
       }).catch((err) => {
         console.warn("[slack] alert failed:", err instanceof Error ? err.message : err);
       });
