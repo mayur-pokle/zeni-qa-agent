@@ -13,6 +13,7 @@ export type ConnectionStatus = {
     alertEmail: string;
     slackWebhookUrl: string;
     resendApiKey: string;
+    resendFrom: string;
   };
   isComplete: boolean;
 };
@@ -73,7 +74,8 @@ export async function getConnectionStateForApp(): Promise<ConnectionStatus> {
         smtpFrom: "",
         alertEmail: "",
         slackWebhookUrl: "",
-        resendApiKey: ""
+        resendApiKey: "",
+        resendFrom: ""
       },
       isComplete: false
     };

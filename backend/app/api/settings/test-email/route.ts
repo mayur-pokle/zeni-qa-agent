@@ -67,6 +67,7 @@ export async function POST(request: NextRequest) {
 
     const resendApiKey = pick(body.resendApiKey, envSettings.resendApiKey);
     const smtpFrom = pick(body.smtpFrom, envSettings.smtpFrom);
+    const resendFrom = pick(body.resendFrom, envSettings.resendFrom);
     const alertEmail = pick(body.alertEmail, envSettings.alertEmail);
 
     // If a Resend key exists (form or env), prefer it — Railway-friendly.
@@ -77,9 +78,13 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         );
       }
+      // Resend enforces sender domain verification. Only use a custom
+      // from-address when the user has explicitly set RESEND_FROM
+      // (indicating they verified that domain). Otherwise fall back to
+      // Resend's shared onboarding address, which works without DNS setup.
       return await testViaResend({
         apiKey: resendApiKey,
-        from: smtpFrom || "QA Monitor <onboarding@resend.dev>",
+        from: resendFrom || "QA Monitor <onboarding@resend.dev>",
         to: alertEmail
       });
     }

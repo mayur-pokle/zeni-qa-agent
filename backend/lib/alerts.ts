@@ -101,7 +101,10 @@ export async function sendAlertEmail(input: {
   if (settings.resendApiKey && settings.alertEmail) {
     await sendViaResend({
       apiKey: settings.resendApiKey,
-      from: settings.smtpFrom || "QA Monitor <onboarding@resend.dev>",
+      // Resend requires the sender domain to be verified. Unless the user
+      // explicitly sets RESEND_FROM to an address on a verified domain,
+      // fall back to Resend's shared onboarding address (no DNS required).
+      from: settings.resendFrom || "QA Monitor <onboarding@resend.dev>",
       to: settings.alertEmail,
       subject: input.subject,
       text: `${input.projectName}\n\n${input.body}`,

@@ -11,6 +11,7 @@ export type ConnectionSettings = {
   alertEmail: string;
   slackWebhookUrl: string;
   resendApiKey: string;
+  resendFrom: string;
 };
 
 function normalizePassword(value: string | undefined) {
@@ -47,7 +48,8 @@ export function readConnectionSettings(): ConnectionSettings {
     smtpFrom: (env.SMTP_FROM ?? "").trim(),
     alertEmail: (env.ALERT_EMAIL ?? smtpUser ?? env.DEMO_USER_EMAIL ?? "").trim(),
     slackWebhookUrl: (env.SLACK_WEBHOOK_URL ?? "").trim(),
-    resendApiKey: (env.RESEND_API_KEY ?? "").trim()
+    resendApiKey: (env.RESEND_API_KEY ?? "").trim(),
+    resendFrom: (env.RESEND_FROM ?? "").trim()
   };
 }
 

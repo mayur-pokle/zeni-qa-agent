@@ -20,7 +20,8 @@ const ENV_NAME: Record<keyof Settings, string> = {
   smtpFrom: "SMTP_FROM",
   alertEmail: "ALERT_EMAIL",
   slackWebhookUrl: "SLACK_WEBHOOK_URL",
-  resendApiKey: "RESEND_API_KEY"
+  resendApiKey: "RESEND_API_KEY",
+  resendFrom: "RESEND_FROM"
 };
 
 function maskSecret(value: string) {

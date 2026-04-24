@@ -12,6 +12,7 @@ const envSchema = z.object({
   ALERT_EMAIL: z.string().optional(),
   SLACK_WEBHOOK_URL: z.string().optional(),
   RESEND_API_KEY: z.string().optional(),
+  RESEND_FROM: z.string().optional(),
   APP_URL: z.string().default("http://localhost:3000"),
   BACKEND_API_URL: z.string().optional(),
   NEXT_PUBLIC_BACKEND_API_URL: z.string().optional(),
@@ -35,5 +36,6 @@ export const env = envSchema.parse({
   BACKEND_API_URL: process.env.BACKEND_API_URL,
   NEXT_PUBLIC_BACKEND_API_URL: process.env.NEXT_PUBLIC_BACKEND_API_URL,
   MONITOR_CRON_SECRET: process.env.MONITOR_CRON_SECRET,
-  DEMO_USER_EMAIL: process.env.DEMO_USER_EMAIL
+  DEMO_USER_EMAIL: process.env.DEMO_USER_EMAIL,
+  RESEND_FROM: process.env.RESEND_FROM
 });
