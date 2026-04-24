@@ -1,0 +1,29 @@
+# Local dev artifacts that must never end up in the image
+node_modules
+**/node_modules
+.next
+**/.next
+dist
+coverage
+
+# Version control and CI metadata
+.git
+.github
+.gitignore
+
+# Environment files — variables come from Railway at runtime
+.env
+.env.*
+!.env.example
+
+# Test artifacts
+playwright-report
+test-results
+**/test-results
+data/qa-progress
+
+# OS / editor cruft
+.DS_Store
+*.log
+.vscode
+.idea

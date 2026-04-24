@@ -9,8 +9,9 @@ type QaProgress = {
   completedPages: number;
   currentUrl: string;
   startedAt: string;
-  status: "running" | "completed";
+  status: "queued" | "running" | "completed" | "failed";
   runId?: string;
+  error?: string;
 } | null;
 
 export function QaProgressPanel({ projectId }: { projectId: string }) {

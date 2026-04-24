@@ -8,8 +8,13 @@ export type QaProgress = {
   completedPages: number;
   currentUrl: string;
   startedAt: string;
-  status: "running" | "completed";
+  // "queued": request accepted, background worker hasn't started yet.
+  // "running": executeQaRun is actively making progress.
+  // "completed": run finished; runId is populated.
+  // "failed": background worker threw; `error` has the message.
+  status: "queued" | "running" | "completed" | "failed";
   runId?: string;
+  error?: string;
 };
 
 function progressDir() {

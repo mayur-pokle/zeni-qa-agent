@@ -10,8 +10,9 @@ type QaProgress = {
   completedPages: number;
   currentUrl: string;
   startedAt: string;
-  status: "running" | "completed";
+  status: "queued" | "running" | "completed" | "failed";
   runId?: string;
+  error?: string;
 } | null;
 
 export function QaProcessCard({ projectId }: { projectId: string }) {
@@ -75,7 +76,8 @@ export function QaProcessCard({ projectId }: { projectId: string }) {
     };
   }, [projectId, router]);
 
-  const isRunning = progress?.status === "running";
+  const isRunning = progress?.status === "running" || progress?.status === "queued";
+  const hasFailed = progress?.status === "failed";
 
   return (
     <section className="border border-[#f5f5f4]/20 p-5">
@@ -91,14 +93,20 @@ export function QaProcessCard({ projectId }: { projectId: string }) {
           No QA process is running right now.
         </div>
       ) : (
-        <div className="border border-[#f5f5f4]/10 p-4">
+        <div
+          className={`border p-4 ${
+            hasFailed ? "border-[#fca5a5]/40" : "border-[#f5f5f4]/10"
+          }`}
+        >
           <div className="flex items-center justify-between gap-3 text-xs text-[#f5f5f4]/60">
             <span>{progress.phase}</span>
             <span>{progress.percent}%</span>
           </div>
           <div className="mt-3 h-2 overflow-hidden border border-[#f5f5f4]/20">
             <div
-              className="h-full bg-[#f5f5f4]/60 transition-all duration-500"
+              className={`h-full transition-all duration-500 ${
+                hasFailed ? "bg-[#fca5a5]/70" : "bg-[#f5f5f4]/60"
+              }`}
               style={{ width: `${progress.percent}%` }}
             />
           </div>
@@ -108,6 +116,11 @@ export function QaProcessCard({ projectId }: { projectId: string }) {
             </div>
             <div className="break-all text-xs text-[#f5f5f4]/58">{progress.currentUrl}</div>
           </div>
+          {hasFailed && progress.error ? (
+            <div className="mt-3 border border-[#fca5a5]/30 p-3 text-xs leading-5 text-[#fecaca]">
+              {progress.error}
+            </div>
+          ) : null}
         </div>
       )}
     </section>

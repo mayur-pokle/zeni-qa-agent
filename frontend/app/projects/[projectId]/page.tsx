@@ -50,9 +50,9 @@ export default async function ProjectDetailPage({
           <TimelineRow
             label="Report Export"
             value={
-              <Link href={`/api/reports/${project.id}`} className="underline">
+              <a href={`/api/reports/${project.id}`} className="underline" download>
                 Download CSV report
-              </Link>
+              </a>
             }
           />
         </SectionCard>
@@ -151,9 +151,9 @@ export default async function ProjectDetailPage({
                     <div>Accessibility: {report.accessibilityScore}</div>
                     <div>Best Practices: {report.bestPracticesScore}</div>
                   </div>
-                  <Link href={`/api/lighthouse-reports/${report.id}`} target="_blank" className="mt-3 inline-flex underline">
+                  <a href={`/api/lighthouse-reports/${report.id}`} target="_blank" rel="noreferrer" className="mt-3 inline-flex underline">
                     View Report
-                  </Link>
+                  </a>
                 </div>
               );
             })}

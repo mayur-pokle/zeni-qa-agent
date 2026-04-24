@@ -15,7 +15,8 @@ export function QaRunningIndicator({ projectId }: { projectId: string }) {
       const data = await response.json().catch(() => null);
 
       if (isMounted) {
-        setIsRunning(data?.progress?.status === "running");
+        const status = data?.progress?.status;
+        setIsRunning(status === "running" || status === "queued");
       }
     }
 
