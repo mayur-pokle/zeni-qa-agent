@@ -52,9 +52,10 @@ const PAGE_GOTO_TIMEOUT_MS = 45_000;
 // How many `page.goto` calls we allow on a single Chromium tab before
 // tearing it down and opening a fresh one. DOM, listeners, and internal
 // caches accumulate per navigation, so on sitemaps with hundreds of URLs
-// the tab steadily grows and eventually OOMs the dyno. Rotating every 50
-// keeps memory roughly flat without spending a lot of time on setup.
-const PAGE_ROTATION_INTERVAL = 50;
+// the tab steadily grows and eventually OOMs the dyno — we saw a Railway
+// container get killed around page 30 with the previous 50 setting, so
+// this is tuned lower to keep memory pressure under the platform's cap.
+const PAGE_ROTATION_INTERVAL = 20;
 
 async function inspectPage(page: import("playwright").Page, pageUrl: string, environment: Environment) {
   const response = await page.goto(pageUrl, {

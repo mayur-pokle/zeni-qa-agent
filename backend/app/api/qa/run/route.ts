@@ -6,7 +6,7 @@ import { sendAlertEmail, sendSlackAlert } from "@/lib/alerts";
 import { getProject } from "@/lib/db";
 import { buildQaRunsCsv } from "@/lib/reports";
 import { slugify } from "@/lib/utils";
-import { getQaProgress, updateQaProgress } from "@/lib/progress";
+import { getQaProgress, STALE_PROGRESS_THRESHOLD_MS, updateQaProgress } from "@/lib/progress";
 
 // Railway's per-request timeout (~100s) isn't enough for QA runs that scan
 // hundreds of pages across three browsers, so this route kicks the work into
@@ -18,7 +18,11 @@ import { getQaProgress, updateQaProgress } from "@/lib/progress";
 // long as the container doesn't restart. If it does restart mid-run, the
 // stale-progress check below lets a subsequent click start fresh.
 
-const STALE_PROGRESS_MS = 30 * 60 * 1000; // 30 minutes
+// Note: getQaProgress() already translates a stale "running"/"queued"
+// state into "failed" using STALE_PROGRESS_THRESHOLD_MS (3 min), so the
+// branch below will never see a stale active status in practice. The
+// explicit check here remains as a belt-and-suspenders guard in case a
+// future change skips getQaProgress's translation.
 
 export async function POST(request: NextRequest) {
   try {
@@ -40,9 +44,10 @@ export async function POST(request: NextRequest) {
     // STALE_PROGRESS_MS as abandoned (e.g. the container restarted mid-run).
     const existing = await getQaProgress(payload.projectId);
     if (existing && (existing.status === "queued" || existing.status === "running")) {
-      const startedAt = Date.parse(existing.startedAt);
+      const lastTouch = Date.parse(existing.updatedAt ?? existing.startedAt);
       const isStale =
-        Number.isFinite(startedAt) && Date.now() - startedAt > STALE_PROGRESS_MS;
+        Number.isFinite(lastTouch) &&
+        Date.now() - lastTouch > STALE_PROGRESS_THRESHOLD_MS;
       if (!isStale) {
         return NextResponse.json(
           {
