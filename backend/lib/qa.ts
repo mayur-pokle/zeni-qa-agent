@@ -133,7 +133,17 @@ export async function executeQaRun(projectId: string, environment: Environment =
     status: "running"
   });
 
-  const primaryBrowser = await chromium.launch({ headless: true });
+  let primaryBrowser: Awaited<ReturnType<typeof chromium.launch>>;
+  try {
+    primaryBrowser = await chromium.launch({ headless: true });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    throw new Error(
+      `Chromium failed to launch: ${message}. ` +
+        `The backend's container image may not have Playwright browsers installed — ` +
+        `check that the Dockerfile's \`playwright install\` step ran successfully.`
+    );
+  }
   const primaryContext = await primaryBrowser.newContext({
     viewport: viewports[2]
   });
@@ -174,7 +184,21 @@ export async function executeQaRun(projectId: string, environment: Environment =
   });
 
   for (const browserEntry of browserMatrix) {
-    const browser = await browserEntry.instance.launch({ headless: true });
+    let browser: Awaited<ReturnType<BrowserType["launch"]>>;
+    try {
+      browser = await browserEntry.instance.launch({ headless: true });
+    } catch (err) {
+      // If a browser isn't installed in this environment (e.g. the image
+      // was slimmed down to chromium-only to fit a deploy size cap),
+      // record it as a skipped module instead of failing the whole run.
+      const message = err instanceof Error ? err.message : String(err);
+      modules.push({
+        name: `${browserEntry.name} page load`,
+        status: "warning",
+        details: [`${browserEntry.name} not available in this environment: ${message.slice(0, 160)}`]
+      });
+      continue;
+    }
     const context = await browser.newContext({
       viewport: viewports[2]
     });
