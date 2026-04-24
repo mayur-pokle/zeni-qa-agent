@@ -10,6 +10,13 @@
 # output that stage 2 copies.
 FROM node:20-slim AS builder
 
+# Prisma warns and falls back to an openssl-1.1.x binary if it can't detect
+# the system's OpenSSL. node:20-slim (Debian bookworm) has libssl3 but no
+# `openssl` CLI out of the box, so we install it here for correct detection.
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends openssl ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
 # Copy workspace manifests first so layer caching works on unchanged deps.
@@ -36,6 +43,12 @@ FROM node:20-slim
 
 ENV NODE_ENV=production \
     PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+
+# Same OpenSSL setup as the builder — needed for both `prisma generate` at
+# image-build time and `prisma db push` at container start.
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends openssl ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
