@@ -1,13 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Environment } from "@prisma/client";
-import { executeQaRun } from "@/lib/qa";
 import { qaRunSchema } from "@/lib/validators";
-import { sendAlertEmail, sendSlackAlert } from "@/lib/alerts";
-import { getProject } from "@/lib/db";
-import { buildQaRunsCsv } from "@/lib/reports";
-import { slugify } from "@/lib/utils";
-import { buildQaAlert } from "@/lib/notifications";
-import { getQaProgress, STALE_PROGRESS_THRESHOLD_MS, updateQaProgress } from "@/lib/progress";
+import { executeQaWithAlerts, seedQueuedProgress } from "@/lib/qa-orchestrator";
+import { getQaProgress, STALE_PROGRESS_THRESHOLD_MS } from "@/lib/progress";
 
 // Railway's per-request timeout (~100s) isn't enough for QA runs that scan
 // hundreds of pages across three browsers, so this route kicks the work into
@@ -62,19 +57,11 @@ export async function POST(request: NextRequest) {
 
     // Seed progress as "queued" so subsequent polls see state immediately,
     // even before `executeQaRun` has done any work.
-    await updateQaProgress(payload.projectId, {
-      phase: "Queued",
-      percent: 0,
-      totalPages: 0,
-      completedPages: 0,
-      currentUrl: "",
-      startedAt: new Date().toISOString(),
-      status: "queued"
-    });
+    await seedQueuedProgress(payload.projectId);
 
     // Fire-and-forget. The floating promise is intentional — errors are
     // funneled into the progress doc so the UI can surface them.
-    void runQaInBackground(payload.projectId, environment);
+    void executeQaWithAlerts(payload.projectId, environment);
 
     return NextResponse.json(
       {
@@ -92,74 +79,3 @@ export async function POST(request: NextRequest) {
   }
 }
 
-/**
- * Execute the QA run outside the HTTP request lifecycle. Notifications
- * (email + Slack) are best-effort and never cause the run to be marked
- * failed; the run itself has already succeeded by the time we get there.
- */
-async function runQaInBackground(projectId: string, environment: Environment) {
-  try {
-    const run = await executeQaRun(projectId, environment);
-    const project = await getProject(projectId);
-
-    if (project && (run.status !== "PASSED" || project.notifyOnCompletion)) {
-      // Assemble the structured alert payload once; both Slack Block Kit
-      // and the HTML email are derived from the same run summary so the
-      // two channels stay in lockstep.
-      const { subject, slackBlocks, slackFallback, emailHtml, emailText } = buildQaAlert({
-        run,
-        project,
-        environment
-      });
-      const csv = buildQaRunsCsv([run]);
-
-      await sendAlertEmail({
-        projectName: project.name,
-        subject,
-        body: emailText,
-        html: emailHtml,
-        attachments: project.notifyOnCompletion
-          ? [
-              {
-                filename: `${slugify(project.name)}-${String(environment).toLowerCase()}-qa-report.csv`,
-                content: csv
-              }
-            ]
-          : []
-      }).catch((err) => {
-        console.warn("[email] alert failed:", err instanceof Error ? err.message : err);
-      });
-
-      // Fan out to Slack in parallel; never fail the run on Slack errors.
-      // Slack webhooks can't attach files, so the Block Kit payload
-      // embeds a "Download CSV" button that points at /api/reports/{id}.
-      sendSlackAlert({
-        projectName: project.name,
-        title: subject,
-        body: slackFallback,
-        blocks: slackBlocks
-      }).catch((err) => {
-        console.warn("[slack] alert failed:", err instanceof Error ? err.message : err);
-      });
-    }
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    console.error("[qa] background run failed:", message);
-
-    // Preserve whatever progress we had so the user sees how far it got
-    // before failing, then overlay the failure status.
-    const current = await getQaProgress(projectId).catch(() => null);
-    await updateQaProgress(projectId, {
-      phase: `Failed: ${message.slice(0, 120)}`,
-      percent: current?.percent ?? 0,
-      totalPages: current?.totalPages ?? 0,
-      completedPages: current?.completedPages ?? 0,
-      currentUrl: current?.currentUrl ?? "",
-      startedAt: current?.startedAt ?? new Date().toISOString(),
-      status: "failed",
-      error: message
-    }).catch((err) => {
-      console.error("[qa] failed to persist failure state:", err);
-    });
-  }
-}
