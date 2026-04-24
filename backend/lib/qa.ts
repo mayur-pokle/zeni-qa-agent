@@ -43,9 +43,23 @@ async function discoverPages(productionUrl: string) {
   }
 }
 
+// Some marketing pages pull in heavy third-party bundles (analytics, chat
+// widgets, pixel trackers) that can push `domcontentloaded` past Playwright's
+// default 30s. 45s is generous enough to survive those without letting a
+// truly dead page hold up the whole run for minutes.
+const PAGE_GOTO_TIMEOUT_MS = 45_000;
+
+// How many `page.goto` calls we allow on a single Chromium tab before
+// tearing it down and opening a fresh one. DOM, listeners, and internal
+// caches accumulate per navigation, so on sitemaps with hundreds of URLs
+// the tab steadily grows and eventually OOMs the dyno. Rotating every 50
+// keeps memory roughly flat without spending a lot of time on setup.
+const PAGE_ROTATION_INTERVAL = 50;
+
 async function inspectPage(page: import("playwright").Page, pageUrl: string, environment: Environment) {
   const response = await page.goto(pageUrl, {
-    waitUntil: "domcontentloaded"
+    waitUntil: "domcontentloaded",
+    timeout: PAGE_GOTO_TIMEOUT_MS
   });
 
   const imagesWithoutAlt = await page.locator("img:not([alt])").count();
@@ -147,17 +161,33 @@ export async function executeQaRun(projectId: string, environment: Environment =
   const primaryContext = await primaryBrowser.newContext({
     viewport: viewports[2]
   });
-  const primaryPage = await primaryContext.newPage();
 
-  primaryPage.on("console", (message) => {
-    if (message.type() === "error") {
-      consoleErrors.push(`[Chromium] ${message.text()}`);
-    }
-  });
+  // Factored out so we can rebuild the page mid-loop without duplicating
+  // the console listener wiring. Each new page gets the same instrumentation.
+  const openInstrumentedPage = async () => {
+    const nextPage = await primaryContext.newPage();
+    nextPage.on("console", (message) => {
+      if (message.type() === "error") {
+        consoleErrors.push(`[Chromium] ${message.text()}`);
+      }
+    });
+    return nextPage;
+  };
+
+  let primaryPage = await openInstrumentedPage();
 
   let pageIndex = 0;
   for (const pageUrl of sitemapUrls) {
     pageIndex += 1;
+
+    // Rotate the tab every PAGE_ROTATION_INTERVAL navigations. We close
+    // the old page first so its memory is released before the new tab
+    // allocates. pageIndex > 1 skips the very first iteration (the page
+    // we already opened above).
+    if (pageIndex > 1 && (pageIndex - 1) % PAGE_ROTATION_INTERVAL === 0) {
+      await primaryPage.close().catch(() => undefined);
+      primaryPage = await openInstrumentedPage();
+    }
     await updateQaProgress(projectId, {
       phase: `QA page ${pageIndex} of ${sitemapUrls.length}`,
       percent: Math.min(75, 10 + Math.round((pageIndex / sitemapUrls.length) * 65)),
@@ -168,7 +198,27 @@ export async function executeQaRun(projectId: string, environment: Environment =
       status: "running"
     });
 
-    pageResults.push(await inspectPage(primaryPage, pageUrl, environment));
+    // A single flaky page (timeout, SSL error, DNS hiccup) must not tear
+    // down the whole run — users care about the aggregate QA signal, not
+    // about whether /pricing loaded in under 45s. We catch per-page
+    // failures and record them as "failed" page entries so they still
+    // surface in the final report.
+    try {
+      pageResults.push(await inspectPage(primaryPage, pageUrl, environment));
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      pageResults.push({
+        url: pageUrl,
+        environment,
+        status: "failed",
+        issues: [`Page load failed: ${message.slice(0, 200)}`],
+        statusCode: null,
+        timestamp: new Date().toISOString(),
+        ctaCount: 0,
+        formCount: 0,
+        layoutShiftCount: 0
+      });
+    }
   }
 
   await primaryBrowser.close();
