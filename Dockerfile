@@ -83,8 +83,16 @@ RUN npm --workspace backend run db:generate
 
 # Install Playwright browsers + their system libs. --with-deps runs apt-get
 # for the required libraries (libnss3, libatk, libgbm, libgtk-3, etc.).
+#
+# We deliberately install ONLY chromium here. Firefox + WebKit binaries plus
+# their extra system libs add ~600 MB, pushing the final image to 4.1 GB —
+# over Railway's 4 GB cap. The QA runner (`lib/qa.ts`) already tolerates
+# missing browsers: the per-browser launch is wrapped in try/catch and
+# records a "warning" module instead of failing the whole run, so the
+# cross-browser matrix just collapses to chromium-only in production.
+#
 # Clean apt caches afterwards to keep the image small.
-RUN npx playwright install --with-deps chromium firefox webkit \
+RUN npx playwright install --with-deps chromium \
   && rm -rf /var/lib/apt/lists/*
 
 EXPOSE 3000
