@@ -4,6 +4,8 @@ import type { QaExecutionPayload, QaModuleResult } from "@/lib/types";
 import { getProject, storeQaRun } from "@/lib/db";
 import { runLighthouseAudit } from "@/lib/lighthouse";
 import { clearQaProgress, updateQaProgress } from "@/lib/progress";
+import { testHubspotForm, type HubspotFormTestResult } from "@/lib/hubspot-form";
+import { recordFormSubmission, shouldDeepTestForm } from "@/lib/form-submission-tracker";
 
 const viewports = [
   { width: 320, height: 720 },
@@ -57,7 +59,12 @@ const PAGE_GOTO_TIMEOUT_MS = 45_000;
 // this is tuned lower to keep memory pressure under the platform's cap.
 const PAGE_ROTATION_INTERVAL = 20;
 
-async function inspectPage(page: import("playwright").Page, pageUrl: string, environment: Environment) {
+async function inspectPage(
+  page: import("playwright").Page,
+  pageUrl: string,
+  environment: Environment,
+  options: { allowDeepFormSubmit: boolean }
+) {
   const response = await page.goto(pageUrl, {
     waitUntil: "domcontentloaded",
     timeout: PAGE_GOTO_TIMEOUT_MS
@@ -65,7 +72,6 @@ async function inspectPage(page: import("playwright").Page, pageUrl: string, env
 
   const imagesWithoutAlt = await page.locator("img:not([alt])").count();
   const headingCount = await page.locator("h1, h2, h3").count();
-  const formCount = await page.locator("form").count();
   const ctaCount = await page
     .locator("a, button")
     .filter({ hasText: /get started|contact|book|demo|learn more|start|try|submit/i })
@@ -74,6 +80,19 @@ async function inspectPage(page: import("playwright").Page, pageUrl: string, env
   const layoutShiftCount = await page.evaluate(() =>
     performance.getEntries().filter((entry) => entry.entryType === "layout-shift").length
   );
+
+  // We deliberately ignore non-HubSpot forms (Webflow, raw <form>,
+  // custom). The HubSpot QA module is the source of truth for the
+  // "is the lead-capture form working?" question.
+  const hubspotForm = await testHubspotForm(page, {
+    deep: options.allowDeepFormSubmit
+  }).catch<HubspotFormTestResult>((err) => ({
+    found: false,
+    attempted: false,
+    succeeded: false,
+    detail: `HubSpot form check threw: ${err instanceof Error ? err.message : String(err)}`
+  }));
+
   const issues: string[] = [];
 
   if (!response?.ok()) {
@@ -96,24 +115,46 @@ async function inspectPage(page: import("playwright").Page, pageUrl: string, env
     issues.push("No CTA detected");
   }
 
-  if (formCount > 0) {
-    issues.push("Form detected - use Playwright suite output for submission status");
+  // HubSpot-specific form issue rules.
+  // - submitted + verified → no issue
+  // - found but not visible → warning
+  // - submission attempted but no success state → failed (real broken form)
+  // - reCAPTCHA / missing fields → warning (we can't fully test, but not broken)
+  if (hubspotForm.found) {
+    if (hubspotForm.visible === false) {
+      issues.push(`HubSpot form not visible: ${hubspotForm.detail}`);
+    } else if (hubspotForm.attempted && !hubspotForm.succeeded) {
+      issues.push(`HubSpot form submission failed: ${hubspotForm.detail}`);
+    } else if (!hubspotForm.attempted && options.allowDeepFormSubmit) {
+      // We had budget for a deep test but couldn't run it
+      // (reCAPTCHA, missing required field, etc.) — warning so the
+      // user knows to extend the dummy data or accept the limitation.
+      issues.push(`HubSpot form deep test skipped: ${hubspotForm.detail}`);
+    }
   }
 
   if (layoutShiftCount > 0) {
     issues.push(`Layout shifts detected: ${layoutShiftCount}`);
   }
 
+  // A submission failure (we clicked submit and HubSpot didn't show a
+  // success state) escalates to "failed" — that's a real broken form.
+  // Everything else is at most "warning".
+  const isHardFailure =
+    issues.some((issue) => issue.startsWith("HTTP")) ||
+    issues.some((issue) => issue.startsWith("HubSpot form submission failed"));
+
   return {
     url: pageUrl,
     environment,
-    status: issues.some((issue) => issue.startsWith("HTTP")) ? "failed" : issues.length > 0 ? "warning" : "passed",
+    status: isHardFailure ? "failed" : issues.length > 0 ? "warning" : "passed",
     issues: issues.length > 0 ? issues : ["Page passed core QA checks"],
     statusCode: response?.status() ?? null,
     timestamp: new Date().toISOString(),
     ctaCount,
-    formCount,
-    layoutShiftCount
+    formCount: hubspotForm.found ? 1 : 0,
+    layoutShiftCount,
+    hubspotForm
   } as QaExecutionPayload["pageResults"][number];
 }
 
@@ -177,6 +218,13 @@ export async function executeQaRun(projectId: string, environment: Environment =
 
   let primaryPage = await openInstrumentedPage();
 
+  // Daily-gate: once per 24h per project, the first HubSpot form we
+  // encounter on this run gets fully filled and submitted. Every
+  // other form (this run or subsequent runs within 24h) is checked
+  // for visibility only. This caps CRM pollution at ~1 row/day even
+  // when the cron fires every 5 minutes.
+  let deepTestBudget = await shouldDeepTestForm(projectId);
+
   let pageIndex = 0;
   for (const pageUrl of sitemapUrls) {
     pageIndex += 1;
@@ -205,7 +253,27 @@ export async function executeQaRun(projectId: string, environment: Environment =
     // failures and record them as "failed" page entries so they still
     // surface in the final report.
     try {
-      pageResults.push(await inspectPage(primaryPage, pageUrl, environment));
+      const result = await inspectPage(primaryPage, pageUrl, environment, {
+        allowDeepFormSubmit: deepTestBudget
+      });
+      pageResults.push(result);
+
+      // If we just spent the deep-test budget on this page (whether the
+      // submit succeeded or threw mid-flight), persist the gate
+      // immediately — we don't want a crash later in the run to leak
+      // another submission on the next cron tick.
+      if (deepTestBudget && result.hubspotForm?.attempted) {
+        deepTestBudget = false;
+        await recordFormSubmission({
+          projectId,
+          pageUrl,
+          environment,
+          status: result.hubspotForm.succeeded
+            ? "submitted_verified"
+            : "submitted_unverified",
+          detail: result.hubspotForm.detail
+        });
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       pageResults.push({
@@ -281,14 +349,28 @@ export async function executeQaRun(projectId: string, environment: Environment =
       details: [`Found ${links.length} clickable links`]
     });
 
-    const formCount = await page.locator("form").count();
+    // The "forms" module now mirrors the per-page HubSpot stats so the
+    // cross-browser dashboard reflects real submission health rather
+    // than a generic <form> tag count.
+    const hubspotPagesFound = pageResults.filter((p) => p.hubspotForm?.found).length;
+    const hubspotSubmitted = pageResults.filter(
+      (p) => p.hubspotForm?.attempted && p.hubspotForm?.succeeded
+    ).length;
+    const hubspotBroken = pageResults.filter(
+      (p) => p.hubspotForm?.attempted && !p.hubspotForm?.succeeded
+    ).length;
     modules.push({
-      name: `${browserEntry.name} forms`,
-      status: formCount > 0 ? "passed" : "warning",
+      name: `${browserEntry.name} forms (HubSpot)`,
+      status:
+        hubspotBroken > 0
+          ? "failed"
+          : hubspotPagesFound === 0
+            ? "warning"
+            : "passed",
       details: [
-        formCount > 0
-          ? `Detected ${formCount} form(s) for submission validation`
-          : "No forms found on landing page"
+        hubspotPagesFound === 0
+          ? "No HubSpot embed forms detected across scanned pages"
+          : `Detected HubSpot forms on ${hubspotPagesFound} page(s); ${hubspotSubmitted} verified via deep submission, ${hubspotBroken} broken`
       ]
     });
 

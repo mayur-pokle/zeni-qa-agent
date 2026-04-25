@@ -40,6 +40,15 @@ export type QaExecutionPayload = {
     ctaCount?: number;
     formCount?: number;
     layoutShiftCount?: number;
+    hubspotForm?: {
+      found: boolean;
+      embedKind?: "iframe" | "inline";
+      visible?: boolean;
+      attempted: boolean;
+      succeeded: boolean;
+      detail: string;
+      missingFields?: string[];
+    };
   }>;
   modules: QaModuleResult[];
   environmentUrl: string;

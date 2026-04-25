@@ -55,6 +55,7 @@ model Project {
   uptimeLogs       UptimeLog[]
   errorLogs        ErrorLog[]
   lighthouseReports LighthouseReport[]
+  formSubmissionLogs FormSubmissionLog[]
 
   @@index([userId, createdAt])
   @@index([monitoringActive, status])
@@ -118,6 +119,24 @@ model AlertSettings {
   performanceThreshold   Int      @default(80)
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt
+}
+
+// One row per HubSpot form submission attempt. We use the most-recent
+// row per project to enforce the "max 1 deep submission per 24h"
+// CRM-pollution gate. We log every attempt (not just successes)
+// because an attempt means we already POSTed to HubSpot and a row
+// almost certainly landed in their CRM.
+model FormSubmissionLog {
+  id          String      @id @default(cuid())
+  projectId   String
+  project     Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  pageUrl     String
+  environment Environment
+  status      String
+  detail      String?
+  submittedAt DateTime    @default(now())
+
+  @@index([projectId, submittedAt])
 }
 
 model LighthouseReport {

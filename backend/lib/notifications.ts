@@ -65,6 +65,22 @@ function summarize(payload: QaExecutionPayload | null | undefined) {
     (page) => (page.layoutShiftCount ?? 0) > 0
   ).length;
 
+  // HubSpot-specific stats: from how many pages a HubSpot embed form
+  // was detected, how many got the deep submission this run, and how
+  // many submissions broke (clicked submit, no success state).
+  const hubspotPagesFound = pageResults.filter((p) => p.hubspotForm?.found).length;
+  const hubspotSubmittedOk = pageResults.filter(
+    (p) => p.hubspotForm?.attempted && p.hubspotForm?.succeeded
+  ).length;
+  const hubspotSubmittedFailed = pageResults.filter(
+    (p) => p.hubspotForm?.attempted && !p.hubspotForm?.succeeded
+  ).length;
+  const hubspotInvisible = pageResults.filter(
+    (p) => p.hubspotForm?.found && p.hubspotForm?.visible === false
+  ).length;
+  const hubspotSubmittedUrl =
+    pageResults.find((p) => p.hubspotForm?.attempted)?.url ?? null;
+
   const modulesFailed = modules.filter((module) => module.status === "failed").length;
   const modulesWarning = modules.filter((module) => module.status === "warning").length;
   const modulesPassed = modules.filter((module) => module.status === "passed").length;
@@ -77,6 +93,11 @@ function summarize(payload: QaExecutionPayload | null | undefined) {
     pagesMissingCta,
     pagesWithForms,
     pagesWithLayoutShifts,
+    hubspotPagesFound,
+    hubspotSubmittedOk,
+    hubspotSubmittedFailed,
+    hubspotInvisible,
+    hubspotSubmittedUrl,
     modulesFailed,
     modulesWarning,
     modulesPassed,
@@ -124,8 +145,15 @@ export function buildQaAlert({ run, project, environment }: QaAlertInputs): QaAl
     `  Pages failed:            ${stats.pagesFailed}`,
     `  Pages with warnings:     ${stats.pagesWithWarnings}`,
     `  Pages missing a CTA:     ${stats.pagesMissingCta}`,
-    `  Pages with forms:        ${stats.pagesWithForms}`,
+    `  Pages with HubSpot forms:${stats.hubspotPagesFound}`,
     `  Pages with layout shift: ${stats.pagesWithLayoutShifts}`,
+    "",
+    "HubSpot form check",
+    `  Forms detected:          ${stats.hubspotPagesFound}`,
+    `  Deep submission today:   ${stats.hubspotSubmittedOk > 0 ? "verified" : stats.hubspotSubmittedFailed > 0 ? "submitted but no success state" : "not run"}`,
+    `  Submitted on:            ${stats.hubspotSubmittedUrl ?? "(no submission today)"}`,
+    `  Forms broken (clicked submit, no success): ${stats.hubspotSubmittedFailed}`,
+    `  Forms found but invisible: ${stats.hubspotInvisible}`,
     "",
     "Cross-browser modules",
     `  Passed:   ${stats.modulesPassed}`,
@@ -190,7 +218,7 @@ export function buildQaAlert({ run, project, environment }: QaAlertInputs): QaAl
       type: "section",
       fields: [
         { type: "mrkdwn", text: `*Pages missing CTA*\n${stats.pagesMissingCta}` },
-        { type: "mrkdwn", text: `*Pages with forms*\n${stats.pagesWithForms}` },
+        { type: "mrkdwn", text: `*Pages w/ HubSpot forms*\n${stats.hubspotPagesFound}` },
         {
           type: "mrkdwn",
           text: `*Pages w/ layout shifts*\n${stats.pagesWithLayoutShifts}`
@@ -198,6 +226,27 @@ export function buildQaAlert({ run, project, environment }: QaAlertInputs): QaAl
         {
           type: "mrkdwn",
           text: `*Modules passed / warn / fail*\n${stats.modulesPassed} / ${stats.modulesWarning} / ${stats.modulesFailed}`
+        }
+      ]
+    },
+    {
+      type: "section",
+      fields: [
+        {
+          type: "mrkdwn",
+          text: `*HubSpot deep submit*\n${stats.hubspotSubmittedOk > 0 ? "✅ verified" : stats.hubspotSubmittedFailed > 0 ? "❌ failed" : "—"}`
+        },
+        {
+          type: "mrkdwn",
+          text: `*HubSpot submit page*\n${stats.hubspotSubmittedUrl ? `<${stats.hubspotSubmittedUrl}|${truncateUrl(stats.hubspotSubmittedUrl)}>` : "none today"}`
+        },
+        {
+          type: "mrkdwn",
+          text: `*HubSpot broken*\n${stats.hubspotSubmittedFailed}`
+        },
+        {
+          type: "mrkdwn",
+          text: `*HubSpot invisible*\n${stats.hubspotInvisible}`
         }
       ]
     },
@@ -291,8 +340,23 @@ function renderEmailHtml(input: {
       row("Pages failed", stats.pagesFailed) +
       row("Pages with warnings", stats.pagesWithWarnings) +
       row("Pages missing a CTA", stats.pagesMissingCta) +
-      row("Pages with forms", stats.pagesWithForms) +
+      row("Pages with HubSpot forms", stats.hubspotPagesFound) +
       row("Pages with layout shifts", stats.pagesWithLayoutShifts)
+  )}
+
+  ${section(
+    "HubSpot form check",
+    row(
+      "Deep submission today",
+      stats.hubspotSubmittedOk > 0
+        ? "Verified"
+        : stats.hubspotSubmittedFailed > 0
+          ? "Submitted but no success state"
+          : "Not run (already submitted in last 24h or no form encountered)"
+    ) +
+      row("Submitted on", stats.hubspotSubmittedUrl ?? "—") +
+      row("Forms broken (no success state)", stats.hubspotSubmittedFailed) +
+      row("Forms found but invisible", stats.hubspotInvisible)
   )}
 
   ${section(
@@ -320,4 +384,11 @@ function escapeHtml(value: string) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
+}
+
+function truncateUrl(url: string, max = 50) {
+  if (url.length <= max) return url;
+  // Strip protocol for compactness, then truncate.
+  const stripped = url.replace(/^https?:\/\//, "");
+  return stripped.length <= max ? stripped : stripped.slice(0, max - 1) + "…";
 }

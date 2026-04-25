@@ -14,6 +14,15 @@ type RunPayload = {
     ctaCount?: number;
     formCount?: number;
     layoutShiftCount?: number;
+    hubspotForm?: {
+      found: boolean;
+      embedKind?: "iframe" | "inline";
+      visible?: boolean;
+      attempted: boolean;
+      succeeded: boolean;
+      detail: string;
+      missingFields?: string[];
+    };
   }>;
   lighthouse?: {
     performanceScore?: number;
@@ -22,6 +31,24 @@ type RunPayload = {
     bestPracticesScore?: number;
   };
 };
+
+type HubspotFormCsv = {
+  found: boolean;
+  embedKind?: "iframe" | "inline";
+  visible?: boolean;
+  attempted: boolean;
+  succeeded: boolean;
+  detail: string;
+  missingFields?: string[];
+};
+
+function hubspotFormStatusLabel(form?: HubspotFormCsv) {
+  if (!form || !form.found) return "";
+  if (form.attempted && form.succeeded) return "submitted-verified";
+  if (form.attempted && !form.succeeded) return "submitted-no-success";
+  if (form.visible === false) return "found-not-visible";
+  return "found-visibility-only";
+}
 
 function buildLighthouseComment(payload: RunPayload, run: Pick<QaRun, "performanceScore" | "seoScore" | "accessibility">) {
   const performanceScore = payload.lighthouse?.performanceScore ?? run.performanceScore ?? 0;
@@ -60,6 +87,9 @@ export function buildQaRunsCsv(runs: Array<Pick<QaRun, "id" | "environment" | "s
             pageStatusCode: pageResult.statusCode ?? "",
             ctaCount: pageResult.ctaCount ?? "",
             formCount: pageResult.formCount ?? "",
+            hubspotFormStatus: hubspotFormStatusLabel(pageResult.hubspotForm),
+            hubspotFormEmbedKind: pageResult.hubspotForm?.embedKind ?? "",
+            hubspotFormDetail: pageResult.hubspotForm?.detail ?? "",
             layoutShiftCount: pageResult.layoutShiftCount ?? "",
             lighthousePerformance,
             lighthouseSeo,
@@ -81,6 +111,9 @@ export function buildQaRunsCsv(runs: Array<Pick<QaRun, "id" | "environment" | "s
               pageStatusCode: "",
               ctaCount: "",
               formCount: "",
+              hubspotFormStatus: "",
+              hubspotFormEmbedKind: "",
+              hubspotFormDetail: "",
               layoutShiftCount: "",
               lighthousePerformance,
               lighthouseSeo,
