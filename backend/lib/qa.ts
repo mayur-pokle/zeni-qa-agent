@@ -51,6 +51,23 @@ async function discoverPages(productionUrl: string) {
 // truly dead page hold up the whole run for minutes.
 const PAGE_GOTO_TIMEOUT_MS = 45_000;
 
+// Hard wall-clock timeout for the whole `inspectPage` call. Several
+// Playwright APIs (`page.title`, `page.evaluate`) don't accept a timeout
+// argument, and a runaway page script can hang them indefinitely — we
+// hit this on a Webflow page with a buggy embed. This caps any single
+// page at 2 minutes (45s goto + ~31s HubSpot deep submit + headroom).
+const PAGE_INSPECT_TIMEOUT_MS = 120_000;
+
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  let timer: NodeJS.Timeout | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
+  });
+  return Promise.race([promise, timeout]).finally(() => {
+    if (timer) clearTimeout(timer);
+  });
+}
+
 // How many `page.goto` calls we allow on a single Chromium tab before
 // tearing it down and opening a fresh one. DOM, listeners, and internal
 // caches accumulate per navigation, so on sitemaps with hundreds of URLs
@@ -291,15 +308,22 @@ async function executeQaRunBody({
       status: "running"
     });
 
-    // A single flaky page (timeout, SSL error, DNS hiccup) must not tear
-    // down the whole run — users care about the aggregate QA signal, not
-    // about whether /pricing loaded in under 45s. We catch per-page
-    // failures and record them as "failed" page entries so they still
-    // surface in the final report.
+    // A single flaky page (timeout, SSL error, DNS hiccup, runaway JS
+    // hanging page.evaluate) must not tear down the whole run — users
+    // care about the aggregate QA signal, not about whether one page
+    // loaded in under 45s. We catch per-page failures and record them
+    // as "failed" page entries so they still surface in the final
+    // report. On any error we also force a tab rotation: a hung
+    // renderer can leak across navigations and we don't want page N+1
+    // to inherit the broken state.
     try {
-      const result = await inspectPage(primaryPage, pageUrl, environment, {
-        allowDeepFormSubmit: deepTestBudget
-      });
+      const result = await withTimeout(
+        inspectPage(primaryPage, pageUrl, environment, {
+          allowDeepFormSubmit: deepTestBudget
+        }),
+        PAGE_INSPECT_TIMEOUT_MS,
+        `inspectPage(${pageUrl})`
+      );
       pageResults.push(result);
 
       // If we just spent the deep-test budget on this page (whether the
@@ -324,13 +348,19 @@ async function executeQaRunBody({
         url: pageUrl,
         environment,
         status: "failed",
-        issues: [`Page load failed: ${message.slice(0, 200)}`],
+        issues: [`Page inspection failed: ${message.slice(0, 200)}`],
         statusCode: null,
         timestamp: new Date().toISOString(),
         ctaCount: 0,
         formCount: 0,
         layoutShiftCount: 0
       });
+
+      // Force a fresh tab. A timed-out inspectPage almost always means
+      // the renderer is hung, and reusing the same Page would propagate
+      // the hang to the next URL.
+      await primaryPage.close().catch(() => undefined);
+      primaryPage = await openInstrumentedPage();
     }
   }
 
