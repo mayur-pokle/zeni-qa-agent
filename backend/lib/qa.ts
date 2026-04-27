@@ -279,12 +279,15 @@ async function executeQaRunBody({
 
   let primaryPage = await openInstrumentedPage();
 
-  // Daily-gate: once per 24h per project, the first HubSpot form we
-  // encounter on this run gets fully filled and submitted. Every
-  // other form (this run or subsequent runs within 24h) is checked
-  // for visibility only. This caps CRM pollution at ~1 row/day even
-  // when the cron fires every 5 minutes.
-  let deepTestBudget = await shouldDeepTestForm(projectId);
+  // Per-scan deep-submit gate. The gate window auto-sizes to the
+  // project's monitoringIntervalMinutes (minus a small buffer), so
+  // every scheduled scan deep-submits exactly once while protecting
+  // against two cron ticks racing within the same scan window.
+  const project = await getProject(projectId);
+  let deepTestBudget = await shouldDeepTestForm(
+    projectId,
+    project?.monitoringIntervalMinutes
+  );
 
   let pageIndex = 0;
   for (const pageUrl of sitemapUrls) {
