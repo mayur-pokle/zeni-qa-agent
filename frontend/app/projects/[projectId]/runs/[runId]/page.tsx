@@ -210,63 +210,32 @@ export default async function QaRunDetailPage({
           {pageResults.length === 0 ? (
             <p className="text-sm text-[#f5f5f4]/65">No pages were captured for this run.</p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[1100px] border-collapse text-xs">
-                <thead>
-                  <tr className="border-b border-[#f5f5f4]/15 text-left uppercase tracking-[0.22em] text-[#f5f5f4]/55">
-                    <th className="px-2 py-2">URL</th>
-                    <th className="px-2 py-2">Status</th>
-                    <th className="px-2 py-2">HTTP</th>
-                    <th className="px-2 py-2">CTAs</th>
-                    <th className="px-2 py-2">Forms</th>
-                    <th className="px-2 py-2">HubSpot</th>
-                    <th className="px-2 py-2">Embed</th>
-                    <th className="px-2 py-2">Layout shifts</th>
-                    <th className="px-2 py-2">Checked at</th>
-                    <th className="px-2 py-2">Issues</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {pageResults.map((page, index) => {
-                    const statusColor =
-                      page.status === "failed"
-                        ? "text-rose-300"
-                        : page.status === "warning"
-                          ? "text-amber-300"
-                          : "text-emerald-300";
-                    return (
-                      <tr key={`${page.url}-${index}`} className="border-b border-[#f5f5f4]/8 align-top">
-                        <td className="max-w-[260px] truncate px-2 py-2">
-                          <a href={page.url} target="_blank" rel="noreferrer" className="underline" title={page.url}>
-                            {page.url}
-                          </a>
-                        </td>
-                        <td className={`px-2 py-2 uppercase tracking-[0.22em] ${statusColor}`}>{page.status}</td>
-                        <td className="px-2 py-2">{page.statusCode ?? "—"}</td>
-                        <td className="px-2 py-2">{page.ctaCount ?? "—"}</td>
-                        <td className="px-2 py-2">{page.formCount ?? "—"}</td>
-                        <td className="px-2 py-2">{hubspotFormStatusLabel(page.hubspotForm)}</td>
-                        <td className="px-2 py-2">{page.hubspotForm?.embedKind ?? "—"}</td>
-                        <td className="px-2 py-2">{page.layoutShiftCount ?? "—"}</td>
-                        <td className="px-2 py-2 text-[#f5f5f4]/70">
-                          {page.timestamp ? formatDate(page.timestamp) : "—"}
-                        </td>
-                        <td className="max-w-[320px] px-2 py-2">
-                          {page.issues && page.issues.length > 0 ? (
-                            <ul className="list-disc pl-4 leading-5 text-[#f5f5f4]/80">
-                              {page.issues.map((issue, i) => (
-                                <li key={i}>{issue}</li>
-                              ))}
-                            </ul>
-                          ) : (
-                            <span className="text-[#f5f5f4]/55">—</span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+            <div className="space-y-4">
+              {(() => {
+                const failed = pageResults.filter((p) => p.status === "failed");
+                const warned = pageResults.filter((p) => p.status === "warning");
+                const passed = pageResults.filter((p) => p.status === "passed");
+                return (
+                  <>
+                    {failed.length + warned.length === 0 ? (
+                      <p className="text-sm text-emerald-300">All {passed.length} pages passed core QA checks.</p>
+                    ) : (
+                      <PageResultsTable
+                        title={`Failed & warning (${failed.length + warned.length})`}
+                        rows={[...failed, ...warned]}
+                        defaultOpen
+                      />
+                    )}
+                    {passed.length > 0 ? (
+                      <PageResultsTable
+                        title={`Passed pages (${passed.length})`}
+                        rows={passed}
+                        defaultOpen={false}
+                      />
+                    ) : null}
+                  </>
+                );
+              })()}
             </div>
           )}
         </SectionCard>
@@ -373,5 +342,107 @@ export default async function QaRunDetailPage({
         </SectionCard>
       </section>
     </Shell>
+  );
+}
+
+function PageResultsTable({
+  title,
+  rows,
+  defaultOpen
+}: {
+  title: string;
+  rows: PageResult[];
+  defaultOpen: boolean;
+}) {
+  return (
+    <details
+      open={defaultOpen}
+      className="border border-[#f5f5f4]/10"
+    >
+      <summary className="cursor-pointer px-4 py-3 text-xs uppercase tracking-[0.22em] text-[#f5f5f4]/75 hover:bg-[#f5f5f4]/5">
+        {title}
+      </summary>
+      <div className="overflow-x-auto border-t border-[#f5f5f4]/10">
+        <table className="w-full min-w-[1200px] border-collapse text-xs">
+          <thead>
+            <tr className="border-b border-[#f5f5f4]/15 text-left uppercase tracking-[0.22em] text-[#f5f5f4]/55">
+              <th className="px-2 py-2">URL</th>
+              <th className="px-2 py-2">Status</th>
+              <th className="px-2 py-2">HTTP</th>
+              <th className="px-2 py-2">CTAs</th>
+              <th className="px-2 py-2">HubSpot</th>
+              <th className="px-2 py-2">Layout shifts</th>
+              <th className="px-2 py-2">Broken links</th>
+              <th className="px-2 py-2">Checked at</th>
+              <th className="px-2 py-2">Issues</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((page, index) => {
+              const statusColor =
+                page.status === "failed"
+                  ? "text-rose-300"
+                  : page.status === "warning"
+                    ? "text-amber-300"
+                    : "text-emerald-300";
+              const broken = page.brokenLinks ?? [];
+              const linksChecked = page.linksChecked ?? 0;
+              return (
+                <tr key={`${page.url}-${index}`} className="border-b border-[#f5f5f4]/8 align-top">
+                  <td className="max-w-[260px] truncate px-2 py-2">
+                    <a href={page.url} target="_blank" rel="noreferrer" className="underline" title={page.url}>
+                      {page.url}
+                    </a>
+                  </td>
+                  <td className={`px-2 py-2 uppercase tracking-[0.22em] ${statusColor}`}>{page.status}</td>
+                  <td className="px-2 py-2">{page.statusCode ?? "—"}</td>
+                  <td className="px-2 py-2">{page.ctaCount ?? "—"}</td>
+                  <td className="px-2 py-2">{hubspotFormStatusLabel(page.hubspotForm)}</td>
+                  <td className="px-2 py-2">{page.layoutShiftCount ?? "—"}</td>
+                  <td className="max-w-[280px] px-2 py-2">
+                    {broken.length === 0 ? (
+                      <span className="text-[#f5f5f4]/55">{linksChecked > 0 ? `0 / ${linksChecked}` : "—"}</span>
+                    ) : (
+                      <details>
+                        <summary className="cursor-pointer text-rose-300">
+                          {broken.length} / {linksChecked}
+                        </summary>
+                        <ul className="mt-1 list-disc pl-4 leading-5 text-[#f5f5f4]/80">
+                          {broken.slice(0, 10).map((link, i) => (
+                            <li key={i} className="break-all">
+                              <a href={link.url} target="_blank" rel="noreferrer" className="underline">
+                                {link.url}
+                              </a>{" "}
+                              <span className="text-rose-300">[{link.status ?? link.reason ?? "?"}]</span>
+                            </li>
+                          ))}
+                          {broken.length > 10 ? (
+                            <li className="text-[#f5f5f4]/55">+ {broken.length - 10} more</li>
+                          ) : null}
+                        </ul>
+                      </details>
+                    )}
+                  </td>
+                  <td className="px-2 py-2 text-[#f5f5f4]/70">
+                    {page.timestamp ? formatDate(page.timestamp) : "—"}
+                  </td>
+                  <td className="max-w-[320px] px-2 py-2">
+                    {page.issues && page.issues.length > 0 ? (
+                      <ul className="list-disc pl-4 leading-5 text-[#f5f5f4]/80">
+                        {page.issues.map((issue, i) => (
+                          <li key={i}>{issue}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <span className="text-[#f5f5f4]/55">—</span>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </details>
   );
 }

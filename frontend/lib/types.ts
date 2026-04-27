@@ -112,6 +112,8 @@ export type QaExecutionPayload = {
       detail: string;
       missingFields?: string[];
     };
+    linksChecked?: number;
+    brokenLinks?: Array<{ url: string; status: number | null; reason?: string }>;
   }>;
   modules: QaModuleResult[];
   environmentUrl: string;

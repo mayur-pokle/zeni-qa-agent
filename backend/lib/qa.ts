@@ -6,6 +6,7 @@ import { runLighthouseAudit } from "@/lib/lighthouse";
 import { clearQaProgress, touchQaProgress, updateQaProgress } from "@/lib/progress";
 import { testHubspotForm, type HubspotFormTestResult } from "@/lib/hubspot-form";
 import { recordFormSubmission, shouldDeepTestForm } from "@/lib/form-submission-tracker";
+import { LinkChecker } from "@/lib/link-check";
 
 const viewports = [
   { width: 320, height: 720 },
@@ -76,11 +77,18 @@ function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise
 // this is tuned lower to keep memory pressure under the platform's cap.
 const PAGE_ROTATION_INTERVAL = 20;
 
+// Cap on internal links validated per page. The dedupe cache means
+// nav/footer links cost nothing after the first page, but a content-
+// heavy page can list dozens of unique links of its own. 80 is enough
+// to cover almost every long blog/landing page without inflating the
+// run duration on a 600-page sitemap.
+const MAX_LINKS_PER_PAGE = 80;
+
 async function inspectPage(
   page: import("playwright").Page,
   pageUrl: string,
   environment: Environment,
-  options: { allowDeepFormSubmit: boolean }
+  options: { allowDeepFormSubmit: boolean; linkChecker?: LinkChecker }
 ) {
   const response = await page.goto(pageUrl, {
     waitUntil: "domcontentloaded",
@@ -97,6 +105,36 @@ async function inspectPage(
   const layoutShiftCount = await page.evaluate(() =>
     performance.getEntries().filter((entry) => entry.entryType === "layout-shift").length
   );
+
+  // Internal-link health. We pull every `a[href]`, resolve relative URLs
+  // against the page, filter to same-origin (so we don't audit external
+  // partners' uptime), dedupe, and validate up to MAX_LINKS_PER_PAGE.
+  // The LinkChecker keeps a per-run cache so repeat nav/footer links
+  // cost ~one HTTP HEAD across the entire QA cycle.
+  let linksChecked = 0;
+  let brokenLinks: Array<{ url: string; status: number | null; reason?: string }> = [];
+  if (options.linkChecker) {
+    const hrefs: string[] = await page
+      .locator("a[href]")
+      .evaluateAll((anchors) =>
+        anchors.map((anchor) => (anchor as HTMLAnchorElement).getAttribute("href") ?? "")
+      )
+      .catch(() => [] as string[]);
+    const internal = Array.from(
+      new Set(
+        hrefs
+          .filter((href) => href && !href.startsWith("mailto:") && !href.startsWith("tel:") && !href.startsWith("javascript:"))
+          .filter((href) => options.linkChecker!.isInternal(href))
+      )
+    ).slice(0, MAX_LINKS_PER_PAGE);
+    linksChecked = internal.length;
+    if (internal.length > 0) {
+      const broken = await options.linkChecker
+        .checkMany(internal)
+        .catch(() => [] as Awaited<ReturnType<LinkChecker["checkMany"]>>);
+      brokenLinks = broken.map(({ url, status, reason }) => ({ url, status, reason }));
+    }
+  }
 
   // We deliberately ignore non-HubSpot forms (Webflow, raw <form>,
   // custom). The HubSpot QA module is the source of truth for the
@@ -154,12 +192,25 @@ async function inspectPage(
     issues.push(`Layout shifts detected: ${layoutShiftCount}`);
   }
 
+  // Broken-link rule. 5xx on any internal link is a hard failure (the
+  // server is genuinely broken); 4xx and timeouts surface as warnings
+  // so a single dead `/old-blog-post` doesn't fail an otherwise-healthy
+  // page.
+  if (brokenLinks.length > 0) {
+    const samples = brokenLinks.slice(0, 3).map((l) => `${l.url} (${l.status ?? l.reason ?? "?"})`);
+    issues.push(
+      `${brokenLinks.length} broken link(s): ${samples.join("; ")}${brokenLinks.length > 3 ? "; …" : ""}`
+    );
+  }
+
   // A submission failure (we clicked submit and HubSpot didn't show a
-  // success state) escalates to "failed" — that's a real broken form.
+  // success state) or a 5xx broken link escalates to "failed".
   // Everything else is at most "warning".
+  const hasServerErrorLink = brokenLinks.some((l) => l.status !== null && l.status >= 500);
   const isHardFailure =
     issues.some((issue) => issue.startsWith("HTTP")) ||
-    issues.some((issue) => issue.startsWith("HubSpot form submission failed"));
+    issues.some((issue) => issue.startsWith("HubSpot form submission failed")) ||
+    hasServerErrorLink;
 
   return {
     url: pageUrl,
@@ -171,7 +222,9 @@ async function inspectPage(
     ctaCount,
     formCount: hubspotForm.found ? 1 : 0,
     layoutShiftCount,
-    hubspotForm
+    hubspotForm,
+    linksChecked,
+    brokenLinks
   } as QaExecutionPayload["pageResults"][number];
 }
 
@@ -289,6 +342,10 @@ async function executeQaRunBody({
     project?.monitoringIntervalMinutes
   );
 
+  // Single per-run link checker. Cache + concurrency limit live on the
+  // instance, so nav/footer links resolve once across the whole sitemap.
+  const linkChecker = new LinkChecker(targetUrl);
+
   let pageIndex = 0;
   for (const pageUrl of sitemapUrls) {
     pageIndex += 1;
@@ -322,7 +379,8 @@ async function executeQaRunBody({
     try {
       const result = await withTimeout(
         inspectPage(primaryPage, pageUrl, environment, {
-          allowDeepFormSubmit: deepTestBudget
+          allowDeepFormSubmit: deepTestBudget,
+          linkChecker
         }),
         PAGE_INSPECT_TIMEOUT_MS,
         `inspectPage(${pageUrl})`

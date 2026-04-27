@@ -23,6 +23,8 @@ type RunPayload = {
       detail: string;
       missingFields?: string[];
     };
+    linksChecked?: number;
+    brokenLinks?: Array<{ url: string; status: number | null; reason?: string }>;
   }>;
   lighthouse?: {
     performanceScore?: number;
@@ -91,6 +93,11 @@ export function buildQaRunsCsv(runs: Array<Pick<QaRun, "id" | "environment" | "s
             hubspotFormEmbedKind: pageResult.hubspotForm?.embedKind ?? "",
             hubspotFormDetail: pageResult.hubspotForm?.detail ?? "",
             layoutShiftCount: pageResult.layoutShiftCount ?? "",
+            linksChecked: pageResult.linksChecked ?? "",
+            brokenLinksCount: pageResult.brokenLinks?.length ?? 0,
+            brokenLinks: (pageResult.brokenLinks ?? [])
+              .map((l) => `${l.url} [${l.status ?? l.reason ?? "?"}]`)
+              .join(" | "),
             lighthousePerformance,
             lighthouseSeo,
             lighthouseAccessibility,
@@ -115,6 +122,9 @@ export function buildQaRunsCsv(runs: Array<Pick<QaRun, "id" | "environment" | "s
               hubspotFormEmbedKind: "",
               hubspotFormDetail: "",
               layoutShiftCount: "",
+              linksChecked: "",
+              brokenLinksCount: 0,
+              brokenLinks: "",
               lighthousePerformance,
               lighthouseSeo,
               lighthouseAccessibility,
