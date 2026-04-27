@@ -18,7 +18,7 @@ export function LoginForm() {
           "content-type": "application/json"
         },
         body: JSON.stringify({
-          username: String(formData.get("username") ?? ""),
+          email: String(formData.get("email") ?? ""),
           password: String(formData.get("password") ?? ""),
           rememberMe: formData.get("rememberMe") === "on"
         })
@@ -38,10 +38,12 @@ export function LoginForm() {
   return (
     <form action={handleSubmit} className="grid gap-5 border border-[#f5f5f4]/20 p-6">
       <div className="grid gap-2">
-        <label className="text-xs uppercase tracking-[0.3em] text-[#f5f5f4]/60">User ID</label>
+        <label className="text-xs uppercase tracking-[0.3em] text-[#f5f5f4]/60">Email</label>
         <input
-          name="username"
-          defaultValue="Mayur"
+          name="email"
+          type="email"
+          autoComplete="username"
+          defaultValue="mayur.pokle@zeni.ai"
           className="border border-[#f5f5f4]/20 bg-transparent px-4 py-3 text-sm outline-none"
         />
       </div>
@@ -50,7 +52,7 @@ export function LoginForm() {
         <input
           name="password"
           type="password"
-          defaultValue="1234"
+          autoComplete="current-password"
           className="border border-[#f5f5f4]/20 bg-transparent px-4 py-3 text-sm outline-none"
         />
       </div>
