@@ -29,11 +29,13 @@ const HUBSPOT_FORM_DUMMY_DATA: Record<string, string> = {
   firstname: "QA",
   lastname: "Monitor",
   email: "qa-monitor@zeni.ai",
-  company: "Zeni QA Test",
-  phone: "999-0000",
+  companyname: "Zeni QA Test",
+  phone: "555-0100",
   jobtitle: "QA Automation",
   companysize: "1-10",
   country: "United States",
+  current_monthly_expenses: "$50k to $100k",
+  is_this_a_us_entity_with_us_bank_accounts_: "no",
   message: "Automated QA check — please ignore"
 };
 
@@ -41,7 +43,9 @@ const FIELD_ALIASES: Record<string, string[]> = {
   firstname: ["firstname", "first_name", "first-name"],
   lastname: ["lastname", "last_name", "last-name"],
   email: ["email"],
-  company: ["company", "company_name", "company_0"],
+  // HubSpot's stock field name is `company`; some portals use a custom
+  // `companyname` property. Try both before giving up.
+  companyname: ["company", "companyname", "company_name", "company_0"],
   phone: ["phone", "mobilephone", "phone_number"],
   jobtitle: ["jobtitle", "job_title", "title"],
   companysize: [
@@ -52,6 +56,20 @@ const FIELD_ALIASES: Record<string, string[]> = {
     "employee_count"
   ],
   country: ["country", "country_region", "country_dropdown"],
+  current_monthly_expenses: [
+    "current_monthly_expenses",
+    "monthly_expenses",
+    "current_monthly_burn",
+    "monthly_burn"
+  ],
+  // HubSpot occasionally appends a trailing underscore when the property
+  // label ends with a question mark; cover both shapes.
+  is_this_a_us_entity_with_us_bank_accounts_: [
+    "is_this_a_us_entity_with_us_bank_accounts_",
+    "is_this_a_us_entity_with_us_bank_accounts",
+    "us_entity_with_us_bank_accounts",
+    "us_entity"
+  ],
   message: [
     "message",
     "description",
