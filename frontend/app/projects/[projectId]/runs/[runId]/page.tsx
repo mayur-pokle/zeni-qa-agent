@@ -101,53 +101,84 @@ export default async function QaRunDetailPage({
         <StatCard label="Failed checks" value={summary?.failedChecks ?? failedPages} helper={`${summary?.warningChecks ?? warnedPages} warnings`} />
       </section>
 
-      <section className="mt-6 grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-        <SectionCard title="Run Overview">
-          <TimelineRow label="Started" value={run.startedAt} formatAsDate />
-          <TimelineRow label="Completed" value={run.completedAt ?? "—"} formatAsDate />
-          <TimelineRow label="Duration" value={durationLabel(run.startedAt, run.completedAt)} />
-          <TimelineRow label="Environment URL" value={payload.environmentUrl ?? "—"} />
-          <TimelineRow
-            label="Pages"
-            value={
-              <span>
-                <span className="text-emerald-300">{passedPages} passed</span>{" · "}
-                <span className="text-amber-300">{warnedPages} warning</span>{" · "}
-                <span className="text-rose-300">{failedPages} failed</span>
-              </span>
-            }
-          />
-          {summary ? (
-            <TimelineRow
-              label="Total checks"
-              value={`${summary.totalChecks} executed (${summary.failedChecks} failed, ${summary.warningChecks} warnings)`}
-            />
-          ) : null}
-        </SectionCard>
+      <nav className="sticky top-0 z-20 mt-6 -mx-6 flex flex-wrap items-center gap-1 border-b border-[#f5f5f4]/15 bg-[#292524]/92 px-6 py-3 text-[10px] uppercase tracking-[0.28em] backdrop-blur">
+        {[
+          { id: "overview", label: "Overview" },
+          { id: "lighthouse", label: "Lighthouse" },
+          { id: "hubspot", label: "HubSpot" },
+          { id: "pages", label: `Pages (${pageResults.length})` },
+          { id: "modules", label: "Modules" },
+          { id: "console", label: `Console (${consoleErrors.length})` },
+          { id: "raw", label: "Raw" }
+        ].map((item) => (
+          <a
+            key={item.id}
+            href={`#${item.id}`}
+            className="border border-transparent px-3 py-1.5 text-[#f5f5f4]/70 transition hover:border-[#f5f5f4]/30 hover:text-[#f5f5f4]"
+          >
+            {item.label}
+          </a>
+        ))}
+        <a
+          href="#top"
+          className="ml-auto border border-[#f5f5f4]/20 px-3 py-1.5 text-[#f5f5f4]/70 transition hover:border-[#f5f5f4]/40 hover:text-[#f5f5f4]"
+        >
+          Top ↑
+        </a>
+      </nav>
+      <span id="top" className="sr-only" aria-hidden="true" />
 
-        <SectionCard title="Lighthouse">
-          <div className="grid grid-cols-2 gap-3 text-sm">
-            <div className="border border-[#f5f5f4]/10 p-3">
-              <div className="text-xs uppercase tracking-[0.22em] text-[#f5f5f4]/55">Performance</div>
-              <div className="mt-1 text-2xl">{lighthousePerformance ?? "—"}</div>
+      <section className="mt-6 grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+        <div id="overview" className="scroll-mt-20">
+          <SectionCard title="Run Overview">
+            <TimelineRow label="Started" value={run.startedAt} formatAsDate />
+            <TimelineRow label="Completed" value={run.completedAt ?? "—"} formatAsDate />
+            <TimelineRow label="Duration" value={durationLabel(run.startedAt, run.completedAt)} />
+            <TimelineRow label="Environment URL" value={payload.environmentUrl ?? "—"} />
+            <TimelineRow
+              label="Pages"
+              value={
+                <span>
+                  <span className="text-emerald-300">{passedPages} passed</span>{" · "}
+                  <span className="text-amber-300">{warnedPages} warning</span>{" · "}
+                  <span className="text-rose-300">{failedPages} failed</span>
+                </span>
+              }
+            />
+            {summary ? (
+              <TimelineRow
+                label="Total checks"
+                value={`${summary.totalChecks} executed (${summary.failedChecks} failed, ${summary.warningChecks} warnings)`}
+              />
+            ) : null}
+          </SectionCard>
+        </div>
+
+        <div id="lighthouse" className="scroll-mt-20">
+          <SectionCard title="Lighthouse">
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div className="border border-[#f5f5f4]/10 p-3">
+                <div className="text-xs uppercase tracking-[0.22em] text-[#f5f5f4]/55">Performance</div>
+                <div className="mt-1 text-2xl">{lighthousePerformance ?? "—"}</div>
+              </div>
+              <div className="border border-[#f5f5f4]/10 p-3">
+                <div className="text-xs uppercase tracking-[0.22em] text-[#f5f5f4]/55">SEO</div>
+                <div className="mt-1 text-2xl">{lighthouseSeo ?? "—"}</div>
+              </div>
+              <div className="border border-[#f5f5f4]/10 p-3">
+                <div className="text-xs uppercase tracking-[0.22em] text-[#f5f5f4]/55">Accessibility</div>
+                <div className="mt-1 text-2xl">{lighthouseAccessibility ?? "—"}</div>
+              </div>
+              <div className="border border-[#f5f5f4]/10 p-3">
+                <div className="text-xs uppercase tracking-[0.22em] text-[#f5f5f4]/55">Best Practices</div>
+                <div className="mt-1 text-2xl">{lighthouseBestPractices ?? "—"}</div>
+              </div>
             </div>
-            <div className="border border-[#f5f5f4]/10 p-3">
-              <div className="text-xs uppercase tracking-[0.22em] text-[#f5f5f4]/55">SEO</div>
-              <div className="mt-1 text-2xl">{lighthouseSeo ?? "—"}</div>
-            </div>
-            <div className="border border-[#f5f5f4]/10 p-3">
-              <div className="text-xs uppercase tracking-[0.22em] text-[#f5f5f4]/55">Accessibility</div>
-              <div className="mt-1 text-2xl">{lighthouseAccessibility ?? "—"}</div>
-            </div>
-            <div className="border border-[#f5f5f4]/10 p-3">
-              <div className="text-xs uppercase tracking-[0.22em] text-[#f5f5f4]/55">Best Practices</div>
-              <div className="mt-1 text-2xl">{lighthouseBestPractices ?? "—"}</div>
-            </div>
-          </div>
-        </SectionCard>
+          </SectionCard>
+        </div>
       </section>
 
-      <section className="mt-6">
+      <section id="hubspot" className="mt-6 scroll-mt-20">
         <SectionCard title="HubSpot Forms">
           {hubspotPagesFound === 0 ? (
             <p className="text-sm text-[#f5f5f4]/65">No HubSpot embed forms detected on tested pages.</p>
@@ -174,7 +205,7 @@ export default async function QaRunDetailPage({
         </SectionCard>
       </section>
 
-      <section className="mt-6">
+      <section id="pages" className="mt-6 scroll-mt-20">
         <SectionCard title={`Page Results (${pageResults.length})`}>
           {pageResults.length === 0 ? (
             <p className="text-sm text-[#f5f5f4]/65">No pages were captured for this run.</p>
@@ -277,7 +308,7 @@ export default async function QaRunDetailPage({
         </section>
       ) : null}
 
-      <section className="mt-6">
+      <section id="modules" className="mt-6 scroll-mt-20">
         <SectionCard title={`Cross-browser Modules (${modules.length})`}>
           {modules.length === 0 ? (
             <p className="text-sm text-[#f5f5f4]/65">No cross-browser modules ran for this QA cycle.</p>
@@ -313,7 +344,7 @@ export default async function QaRunDetailPage({
         </SectionCard>
       </section>
 
-      <section className="mt-6">
+      <section id="console" className="mt-6 scroll-mt-20">
         <SectionCard title={`Console Errors (${consoleErrors.length})`}>
           {consoleErrors.length === 0 ? (
             <p className="text-sm text-[#f5f5f4]/65">No browser console errors captured during this run.</p>
@@ -329,7 +360,7 @@ export default async function QaRunDetailPage({
         </SectionCard>
       </section>
 
-      <section className="mt-6">
+      <section id="raw" className="mt-6 scroll-mt-20">
         <SectionCard title="Raw Payload">
           <details>
             <summary className="cursor-pointer text-xs uppercase tracking-[0.22em] text-[#f5f5f4]/65">
