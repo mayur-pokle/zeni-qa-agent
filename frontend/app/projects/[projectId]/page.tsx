@@ -80,51 +80,66 @@ export default async function ProjectDetailPage({
       <section className="mt-6 grid gap-6 lg:grid-cols-2">
         <QaProcessCard projectId={project.id} />
 
-        <SectionCard title="QA Reports">
-          <div className="space-y-3">
-            {project.qaRuns.map((run) => (
-              <div key={run.id} className="border border-[#f5f5f4]/10 p-4">
-                {(() => {
-                  const payload = run.payload as {
-                    pageResults?: Array<{
-                      issues?: string[];
-                      ctaCount?: number;
-                      formCount?: number;
-                      layoutShiftCount?: number;
-                    }>;
-                    lighthouse?: {
-                      bestPracticesScore?: number;
-                    };
-                  };
-                  const pageResults = payload.pageResults ?? [];
-                  const missingCtas = pageResults.filter((page) => (page.ctaCount ?? 0) === 0).length;
-                  const pagesWithForms = pageResults.filter((page) => (page.formCount ?? 0) > 0).length;
-                  const layoutShiftPages = pageResults.filter((page) => (page.layoutShiftCount ?? 0) > 0).length;
+        <SectionCard title={`QA Reports (${project.qaRuns.length})`}>
+          {project.qaRuns.length === 0 ? (
+            <p className="text-sm text-[#f5f5f4]/65">No QA runs have been recorded yet.</p>
+          ) : (
+            <div className="space-y-3">
+              {project.qaRuns.map((run) => {
+                const payload = run.payload as {
+                  pageResults?: Array<{
+                    issues?: string[];
+                    ctaCount?: number;
+                    formCount?: number;
+                    layoutShiftCount?: number;
+                    hubspotForm?: { found?: boolean; attempted?: boolean; succeeded?: boolean; visible?: boolean };
+                  }>;
+                  sitemap?: { testedPages?: number };
+                  lighthouse?: { bestPracticesScore?: number };
+                };
+                const pageResults = payload.pageResults ?? [];
+                const missingCtas = pageResults.filter((page) => (page.ctaCount ?? 0) === 0).length;
+                const layoutShiftPages = pageResults.filter((page) => (page.layoutShiftCount ?? 0) > 0).length;
+                const hubspotFound = pageResults.filter((page) => page.hubspotForm?.found).length;
+                const hubspotOk = pageResults.filter(
+                  (page) => page.hubspotForm?.attempted && page.hubspotForm?.succeeded
+                ).length;
+                const hubspotBroken = pageResults.filter(
+                  (page) => page.hubspotForm?.attempted && !page.hubspotForm?.succeeded
+                ).length;
 
-                  return (
-                    <>
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <StatusPill label={`${run.environment} ${run.status}`} />
-                  <span className="text-xs text-[#f5f5f4]/60">{formatDate(run.startedAt)}</span>
-                </div>
-                <div className="mt-4 grid gap-2 text-sm">
-                  <div>Performance: {run.performanceScore ?? "N/A"}</div>
-                  <div>SEO: {run.seoScore ?? "N/A"}</div>
-                  <div>Accessibility: {run.accessibility ?? "N/A"}</div>
-                  <div>Best Practices: {payload.lighthouse?.bestPracticesScore ?? "N/A"}</div>
-                  <div>
-                    Pages scanned: {((run.payload as { sitemap?: { testedPages?: number } }).sitemap?.testedPages ?? "N/A")}
-                  </div>
-                  <div>Pages missing CTA: {missingCtas}</div>
-                  <div>Pages with forms: {pagesWithForms}</div>
-                  <div>Pages with layout shifts: {layoutShiftPages}</div>
-                </div>
-                    </>
-                  );
-                })()}
-              </div>
-            ))}
-          </div>
+                return (
+                  <Link
+                    key={run.id}
+                    href={`/projects/${project.id}/runs/${run.id}`}
+                    className="block border border-[#f5f5f4]/10 p-4 transition hover:border-[#f5f5f4]/30"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <StatusPill label={`${run.environment} ${run.status}`} />
+                      <span className="text-xs text-[#f5f5f4]/60">{formatDate(run.startedAt)}</span>
+                    </div>
+                    <div className="mt-4 grid gap-2 text-sm md:grid-cols-2">
+                      <div>Performance: {run.performanceScore ?? "N/A"}</div>
+                      <div>SEO: {run.seoScore ?? "N/A"}</div>
+                      <div>Accessibility: {run.accessibility ?? "N/A"}</div>
+                      <div>Best Practices: {payload.lighthouse?.bestPracticesScore ?? "N/A"}</div>
+                      <div>Pages scanned: {payload.sitemap?.testedPages ?? "N/A"}</div>
+                      <div>Pages missing CTA: {missingCtas}</div>
+                      <div>Layout-shift pages: {layoutShiftPages}</div>
+                      <div>
+                        HubSpot: {hubspotFound} found
+                        {hubspotOk > 0 ? `, ${hubspotOk} verified` : ""}
+                        {hubspotBroken > 0 ? `, ${hubspotBroken} broken` : ""}
+                      </div>
+                    </div>
+                    <div className="mt-3 text-xs uppercase tracking-[0.22em] text-[#f5f5f4]/55">
+                      View full report →
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
         </SectionCard>
       </section>
 

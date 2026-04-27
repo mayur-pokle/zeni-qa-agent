@@ -103,8 +103,32 @@ export type QaExecutionPayload = {
     ctaCount?: number;
     formCount?: number;
     layoutShiftCount?: number;
+    hubspotForm?: {
+      found: boolean;
+      embedKind?: "iframe" | "inline";
+      visible?: boolean;
+      attempted: boolean;
+      succeeded: boolean;
+      detail: string;
+      missingFields?: string[];
+    };
   }>;
   modules: QaModuleResult[];
   environmentUrl: string;
   consoleErrors: string[];
+  lighthouse?: {
+    performanceScore?: number;
+    seoScore?: number;
+    accessibilityScore?: number;
+    bestPracticesScore?: number;
+  };
+};
+
+export type QaRunDetail = QaRunRecord & {
+  project: {
+    id: string;
+    name: string;
+    stagingUrl?: string | null;
+    productionUrl: string;
+  };
 };

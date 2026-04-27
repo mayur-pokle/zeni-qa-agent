@@ -1,5 +1,5 @@
 import { fetchBackendJson } from "@/lib/backend";
-import type { ProjectListFilters, ProjectWithRelations } from "@/lib/types";
+import type { ProjectListFilters, ProjectWithRelations, QaRunDetail } from "@/lib/types";
 
 export type ConnectionStatus = {
   settings: {
@@ -52,6 +52,15 @@ export async function listProjectsForApp(filters: ProjectListFilters = {}) {
 
 export async function getProjectForApp(projectId: string) {
   return fetchBackendJson<ProjectWithRelations>(`/api/projects/${projectId}`);
+}
+
+export async function getQaRunForApp(runId: string) {
+  try {
+    return await fetchBackendJson<QaRunDetail>(`/api/qa-runs/${runId}`);
+  } catch (error) {
+    console.error("[frontend] unable to load QA run", error);
+    return null;
+  }
 }
 
 /**

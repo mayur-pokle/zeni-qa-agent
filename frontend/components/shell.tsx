@@ -11,7 +11,7 @@ export function Shell({
   actions
 }: {
   title: string;
-  description: string;
+  description: React.ReactNode;
   children: React.ReactNode;
   actions?: React.ReactNode;
 }) {
