@@ -3,7 +3,7 @@ import { Environment, RunStatus } from "@prisma/client";
 import type { QaExecutionPayload, QaModuleResult } from "@/lib/types";
 import { getProject, storeQaRun } from "@/lib/db";
 import { runLighthouseAudit } from "@/lib/lighthouse";
-import { clearQaProgress, updateQaProgress } from "@/lib/progress";
+import { clearQaProgress, touchQaProgress, updateQaProgress } from "@/lib/progress";
 import { testHubspotForm, type HubspotFormTestResult } from "@/lib/hubspot-form";
 import { recordFormSubmission, shouldDeepTestForm } from "@/lib/form-submission-tracker";
 
@@ -189,6 +189,50 @@ export async function executeQaRun(projectId: string, environment: Environment =
     status: "running"
   });
 
+  // Heartbeat: while executeQaRun is alive, refresh the progress file's
+  // updatedAt every 30s. This keeps long Lighthouse / cross-browser /
+  // form-render waits from tripping the staleness detector. Cleared in
+  // the finally block below so a thrown error doesn't leak the timer.
+  const heartbeat = setInterval(() => {
+    void touchQaProgress(projectId);
+  }, 30_000);
+  // Don't keep the Node process alive just for the heartbeat.
+  if (typeof heartbeat.unref === "function") heartbeat.unref();
+
+  try {
+    return await executeQaRunBody({
+      projectId,
+      environment,
+      targetUrl,
+      modules,
+      consoleErrors,
+      pageResults,
+      sitemapUrls
+    });
+  } finally {
+    clearInterval(heartbeat);
+  }
+}
+
+type ExecuteQaRunBodyArgs = {
+  projectId: string;
+  environment: Environment;
+  targetUrl: string;
+  modules: QaModuleResult[];
+  consoleErrors: string[];
+  pageResults: QaExecutionPayload["pageResults"];
+  sitemapUrls: string[];
+};
+
+async function executeQaRunBody({
+  projectId,
+  environment,
+  targetUrl,
+  modules,
+  consoleErrors,
+  pageResults,
+  sitemapUrls
+}: ExecuteQaRunBodyArgs) {
   let primaryBrowser: Awaited<ReturnType<typeof chromium.launch>>;
   try {
     primaryBrowser = await chromium.launch({ headless: true });

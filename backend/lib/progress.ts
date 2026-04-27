@@ -23,10 +23,11 @@ export type QaProgress = {
 
 // If the progress file hasn't been touched for this long while its status
 // is still "running" or "queued", we consider the worker dead (almost
-// always a Railway container restart). 3 minutes is loose enough to
-// absorb slow pages — the per-page goto timeout is 45s — without leaving
-// the UI hanging indefinitely.
-export const STALE_PROGRESS_THRESHOLD_MS = 3 * 60 * 1000;
+// always a Railway container restart). The worker also runs a 30s
+// heartbeat (touchQaProgress) for the duration of executeQaRun, so the
+// only way to exceed this threshold is for the process itself to be
+// gone. 5 minutes leaves comfortable headroom for that heartbeat.
+export const STALE_PROGRESS_THRESHOLD_MS = 5 * 60 * 1000;
 
 function progressDir() {
   return path.join(process.cwd(), "data", "qa-progress");
@@ -91,4 +92,25 @@ export async function getQaProgress(projectId: string): Promise<QaProgress | nul
 
 export async function clearQaProgress(projectId: string) {
   await rm(progressFile(projectId), { force: true });
+}
+
+/**
+ * Lightweight heartbeat: re-reads the existing progress file, refreshes
+ * `updatedAt`, and writes it back. Used by a setInterval inside
+ * executeQaRun so long-running operations (Lighthouse, cross-browser
+ * smoke tests, slow page loads) don't trip the staleness threshold.
+ *
+ * No-op if the file is missing or unreadable — we never want a heartbeat
+ * crash to take down the QA worker.
+ */
+export async function touchQaProgress(projectId: string) {
+  try {
+    const raw = await readFile(progressFile(projectId), "utf8");
+    const parsed = JSON.parse(raw) as QaProgress;
+    if (parsed.status !== "running" && parsed.status !== "queued") return;
+    const stamped: QaProgress = { ...parsed, updatedAt: new Date().toISOString() };
+    await writeFile(progressFile(projectId), JSON.stringify(stamped, null, 2), "utf8");
+  } catch {
+    // Best-effort heartbeat — silently swallow read/write errors.
+  }
 }
