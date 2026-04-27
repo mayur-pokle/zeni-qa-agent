@@ -113,6 +113,13 @@ export async function testHubspotForm(
     };
   }
 
+  // Dismiss common cookie-consent banners. HubSpot's tracking script
+  // sets the `hubspotutk` cookie on page load, which the form's API
+  // needs to associate the submission with a contact. If a consent
+  // banner blocks the script (or visually overlays the submit button)
+  // submissions silently fail. Best-effort — failure is a no-op.
+  await dismissCookieBanner(page).catch(() => undefined);
+
   const handle = await locateHubspotForm(page);
   if (!handle) {
     return {
@@ -173,27 +180,75 @@ export async function testHubspotForm(
       };
     }
 
+    // Set up a listener for HubSpot's submission endpoint BEFORE we
+    // click submit. This is the source of truth for whether the form
+    // actually POSTed: a click that fires but never produces a network
+    // request means client-side validation silently killed the
+    // submission. waitForResponse listens across all frames in the page,
+    // so it catches iframe-embed forms too.
+    const HUBSPOT_SUBMIT_URL_RE =
+      /forms[^/]*\.hsforms\.(com|net)\/(?:submissions|uploads)\/v3\/(?:integration\/)?(?:submit|upload)/;
+    const submissionResponsePromise = page
+      .waitForResponse((res) => HUBSPOT_SUBMIT_URL_RE.test(res.url()), {
+        timeout: SUBMIT_VERIFY_TIMEOUT_MS
+      })
+      .catch(() => null);
+
     await submitForm(handle);
-    const success = await verifySubmissionSuccess(handle);
-    if (!success) {
+    const submissionResponse = await submissionResponsePromise;
+
+    if (submissionResponse) {
+      const status = submissionResponse.status();
+      const ok = submissionResponse.ok();
+      // Best-effort body capture for non-2xx responses so the report
+      // includes HubSpot's actual rejection reason.
+      let bodyHint = "";
+      if (!ok) {
+        const bodyText = await submissionResponse.text().catch(() => "");
+        bodyHint = bodyText ? ` · ${bodyText.slice(0, 240)}` : "";
+      }
       return {
         found: true,
         embedKind: handle.kind,
         visible: true,
         attempted: true,
-        succeeded: false,
-        detail:
-          "Submitted but no success state appeared within 15s — possible HubSpot validation error or outage"
+        succeeded: ok,
+        detail: ok
+          ? `HubSpot accepted submission (HTTP ${status}); ${fillResult.filledFields.length} field(s) filled`
+          : `HubSpot rejected submission with HTTP ${status}${bodyHint}`
       };
     }
 
+    // No network request fired within the verify window. The submit
+    // button click either didn't reach the form, or HubSpot's
+    // client-side validation blocked the POST. Pull any visible error
+    // messages from the form so the report explains why.
+    const validationErrors = await collectFormErrors(handle);
+    const fallbackDomSuccess = await verifySubmissionSuccess(handle);
+    if (fallbackDomSuccess) {
+      // Edge case: success state appeared but our network listener
+      // missed the request (e.g., it fired before the listener was
+      // attached). Treat as success but flag the ambiguity.
+      return {
+        found: true,
+        embedKind: handle.kind,
+        visible: true,
+        attempted: true,
+        succeeded: true,
+        detail:
+          "Success state appeared but submission network request not observed — likely succeeded"
+      };
+    }
     return {
       found: true,
       embedKind: handle.kind,
       visible: true,
-      attempted: true,
-      succeeded: true,
-      detail: `Form submitted (${fillResult.filledFields.length} field(s) filled) and success state verified`
+      attempted: false,
+      succeeded: false,
+      detail:
+        validationErrors.length > 0
+          ? `Submit click did not POST to HubSpot. Form errors: ${validationErrors.slice(0, 3).join(" | ")}${validationErrors.length > 3 ? " | …" : ""}`
+          : "Submit click did not produce a network request to HubSpot within 15s — likely blocked by client-side validation, cookie consent banner, or anti-bot script"
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
@@ -460,6 +515,77 @@ async function submitForm(handle: FormHandle) {
     .first();
   await fallback.scrollIntoViewIfNeeded().catch(() => undefined);
   await fallback.click();
+}
+
+/**
+ * Click whatever "Accept all cookies" button the page is showing, if
+ * any. Matches a known set of consent vendors first (most reliable),
+ * then falls back to a generic text match scoped inside elements that
+ * look like cookie containers. Conservative on purpose — clicking the
+ * wrong button could trigger unintended navigation.
+ */
+async function dismissCookieBanner(page: Page) {
+  const knownAcceptSelectors = [
+    "#onetrust-accept-btn-handler",
+    "#accept-recommended-btn-handler",
+    "#CybotCookiebotDialogBodyLevelButtonAccept",
+    "#CybotCookiebotDialogBodyButtonAccept",
+    ".optanon-allow-all",
+    ".cc-allow",
+    "[data-cookieconsent='accept']",
+    "[data-testid='cookie-accept-all']",
+    "button[aria-label*='Accept all' i]",
+    "button[aria-label*='Allow all' i]"
+  ];
+  for (const sel of knownAcceptSelectors) {
+    const button = page.locator(sel).first();
+    if (await button.isVisible().catch(() => false)) {
+      await button.click({ timeout: 2_000 }).catch(() => undefined);
+      await page.waitForTimeout(300);
+      return;
+    }
+  }
+
+  // Generic fallback — a button with "accept all" / "allow all" text
+  // *inside* an element whose class or id mentions cookie/consent/gdpr.
+  const containerLocator = page.locator(
+    "[class*='cookie' i], [id*='cookie' i], [class*='consent' i], [id*='consent' i], [class*='gdpr' i]"
+  );
+  const candidate = containerLocator
+    .locator("button, a")
+    .filter({ hasText: /accept all|allow all|accept cookies|i agree|got it|allow cookies/i })
+    .first();
+  if (await candidate.isVisible().catch(() => false)) {
+    await candidate.click({ timeout: 2_000 }).catch(() => undefined);
+    await page.waitForTimeout(300);
+  }
+}
+
+/**
+ * Pull any visible HubSpot validation error messages out of the form.
+ * Used after a submit click that produced no network request — the
+ * messages tell us *why* HubSpot blocked the POST (invalid email,
+ * required-but-empty field, GDPR consent unchecked, etc.).
+ */
+async function collectFormErrors(handle: FormHandle): Promise<string[]> {
+  const scope = scopeFromHandle(handle);
+  const errorSelectors = [
+    ".hs-error-msg",
+    ".hs-error-msgs li",
+    ".hs-error-msgs label",
+    "[data-error-message]",
+    ".hs_error_rollup",
+    ".hs-form-required-error",
+    ".form-error"
+  ].join(", ");
+  const texts = await scope
+    .locator(errorSelectors)
+    .allInnerTexts()
+    .catch(() => [] as string[]);
+  return texts
+    .map((t) => t.trim())
+    .filter((t) => t.length > 0)
+    .slice(0, 8);
 }
 
 async function verifySubmissionSuccess(handle: FormHandle): Promise<boolean> {

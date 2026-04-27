@@ -43,7 +43,7 @@ export function LoginForm() {
           name="email"
           type="email"
           autoComplete="username"
-          defaultValue="mayur.pokle@zeni.ai"
+          placeholder="you@zeni.ai"
           className="border border-[#f5f5f4]/20 bg-transparent px-4 py-3 text-sm outline-none"
         />
       </div>
