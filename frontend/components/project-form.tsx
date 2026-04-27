@@ -107,6 +107,7 @@ export function ProjectForm({ mode, initialValues }: ProjectFormProps) {
           <option value="30">30 mins</option>
           <option value="60">1 hour</option>
           <option value="360">6 hours</option>
+          <option value="720">12 hours (twice a day)</option>
           <option value="1440">1 day</option>
         </select>
       </label>
