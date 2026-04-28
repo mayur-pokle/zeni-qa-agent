@@ -14,6 +14,11 @@ const envSchema = z.object({
   RESEND_API_KEY: z.string().optional(),
   RESEND_FROM: z.string().optional(),
   APP_URL: z.string().default("http://localhost:3000"),
+  // Public URL of the user-facing frontend. Used when building links
+  // for Slack / email alerts and any other notification that a person
+  // will click. Falls back to APP_URL when unset (which is correct for
+  // local dev where backend and frontend share localhost:3000).
+  FRONTEND_URL: z.string().optional(),
   BACKEND_API_URL: z.string().optional(),
   NEXT_PUBLIC_BACKEND_API_URL: z.string().optional(),
   MONITOR_CRON_SECRET: z.string().default("change-me"),
@@ -33,6 +38,7 @@ export const env = envSchema.parse({
   SLACK_WEBHOOK_URL: process.env.SLACK_WEBHOOK_URL,
   RESEND_API_KEY: process.env.RESEND_API_KEY,
   APP_URL: process.env.APP_URL,
+  FRONTEND_URL: process.env.FRONTEND_URL,
   BACKEND_API_URL: process.env.BACKEND_API_URL,
   NEXT_PUBLIC_BACKEND_API_URL: process.env.NEXT_PUBLIC_BACKEND_API_URL,
   MONITOR_CRON_SECRET: process.env.MONITOR_CRON_SECRET,

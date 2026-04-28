@@ -8,6 +8,12 @@ export default async function DashboardPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  const params = await searchParams;
+  // Sanitised post-login destination. Only same-origin paths are
+  // allowed so the param can never bounce the user to an external URL.
+  const rawNext = typeof params.next === "string" ? params.next : null;
+  const safeNext = rawNext && rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : null;
+
   if (!(await isAuthenticated())) {
     return (
       <div className="min-h-screen bg-canvas text-ink">
@@ -27,11 +33,13 @@ export default async function DashboardPage({
               <div className="space-y-2">
                 <h1 className="text-[22px] font-semibold text-ink">Sign in</h1>
                 <p className="text-[13px] text-ink-2">
-                  Use your Flowtest credentials to access the QA monitor.
+                  {safeNext
+                    ? "Sign in to view the report you were sent."
+                    : "Use your Flowtest credentials to access the QA monitor."}
                 </p>
               </div>
               <div className="mt-6">
-                <LoginForm />
+                <LoginForm next={safeNext} />
               </div>
             </div>
             <p className="mt-4 text-center text-[12px] text-ink-3">
@@ -43,7 +51,14 @@ export default async function DashboardPage({
     );
   }
 
-  const params = await searchParams;
+  // Authenticated visitor on `/?next=…` — middleware has already done its
+  // job, so we honour `next` here too in case someone landed on the login
+  // route while already signed in.
+  if (safeNext) {
+    const { redirect } = await import("next/navigation");
+    redirect(safeNext);
+  }
+
   const initialFilters = {
     search: typeof params.search === "string" ? params.search : undefined,
     monitoring:

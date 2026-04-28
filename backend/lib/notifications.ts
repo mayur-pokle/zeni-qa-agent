@@ -39,8 +39,16 @@ function scoreLabel(score: number | null | undefined) {
 }
 
 function appBaseUrl() {
-  // Strip trailing slash so we don't produce `//api/...`.
+  // Strip trailing slash so we don't produce `//api/...`. Used for
+  // backend-rooted links like the CSV download endpoint.
   return (env.APP_URL ?? "").replace(/\/+$/, "");
+}
+
+function frontendBaseUrl() {
+  // Public URL the user clicks. Falls back to APP_URL so local dev
+  // (where backend and frontend share localhost:3000) keeps working
+  // without setting an extra env var.
+  return ((env.FRONTEND_URL ?? env.APP_URL) ?? "").replace(/\/+$/, "");
 }
 
 /**
@@ -120,16 +128,15 @@ export function buildQaAlert({ run, project, environment }: QaAlertInputs): QaAl
       ? `[QA Alert] ${project.name} ${envLabel} ${run.status}`
       : `[QA Report] ${project.name} ${envLabel} completed`;
 
-  const base = appBaseUrl();
-  // /api/reports/[runId] is confusingly parameterised — it treats the path
-  // param as a *project* id (see backend/app/api/reports/[runId]/route.ts)
-  // and returns all runs for that project as a CSV. We thread the project
-  // id through to match.
-  const csvDownloadUrl = `${base}/api/reports/${project.id}`;
-  // Deep-link straight to this specific run's report — landing on the
-  // project page forces the recipient to click again to find the run
-  // their alert was about.
-  const reportPageUrl = `${base}/projects/${project.id}/runs/${run.id}`;
+  const backendBase = appBaseUrl();
+  const frontendBase = frontendBaseUrl();
+  // /api/reports/[runId] is confusingly parameterised — it treats the
+  // path param as a *project* id (see backend/app/api/reports/[runId]/
+  // route.ts) and returns all runs for that project as a CSV. We thread
+  // the project id through to match. CSV is a backend route so it uses
+  // backendBase; the user-facing run report lives on the frontend.
+  const csvDownloadUrl = `${backendBase}/api/reports/${project.id}`;
+  const reportPageUrl = `${frontendBase}/projects/${project.id}/runs/${run.id}`;
 
   // ---------- Email (HTML + plain text) ----------
   const emailText = [

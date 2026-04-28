@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
 
-export function LoginForm() {
+export function LoginForm({ next }: { next?: string | null } = {}) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState("");
@@ -32,7 +32,12 @@ export function LoginForm() {
         return;
       }
 
-      router.push("/");
+      // Same-origin paths only — the server already validated this
+      // when reading ?next, but we double-check here in case the prop
+      // was ever sourced elsewhere.
+      const destination =
+        next && next.startsWith("/") && !next.startsWith("//") ? next : "/";
+      router.push(destination);
       router.refresh();
     });
   }
