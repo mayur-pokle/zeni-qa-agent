@@ -3,7 +3,20 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Search, FolderOpen, CheckCircle2, AlertTriangle, AlertOctagon } from "lucide-react";
+import {
+  Plus,
+  Search,
+  FolderOpen,
+  CheckCircle2,
+  AlertTriangle,
+  AlertOctagon,
+  Eye,
+  Pencil,
+  Activity,
+  Calendar,
+  Globe,
+  Gauge
+} from "lucide-react";
 import { PageChrome } from "@/components/ui/page-chrome";
 import { Card, CardHeader } from "@/components/ui/card";
 import { StatTile } from "@/components/ui/stat-tile";
@@ -211,15 +224,16 @@ export function DashboardClient({ initialFilters }: { initialFilters: DashboardF
             />
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[820px] border-collapse text-sm">
+              <table className="w-full min-w-[920px] border-collapse text-sm">
                 <thead>
                   <tr className="text-left text-xs font-medium text-ink-3">
-                    <th className="px-5 py-3 font-medium">Project</th>
-                    <th className="px-3 py-3 font-medium">Status</th>
-                    <th className="px-3 py-3 font-medium">Last tested</th>
-                    <th className="px-3 py-3 font-medium">Uptime</th>
-                    <th className="px-3 py-3 font-medium">Performance</th>
-                    <th className="px-3 py-3 font-medium">Monitoring</th>
+                    <ColHeader icon={<FolderOpen className="h-3.5 w-3.5" />} label="Project" className="px-6" />
+                    <ColHeader icon={<Activity className="h-3.5 w-3.5" />} label="Status" />
+                    <ColHeader icon={<Calendar className="h-3.5 w-3.5" />} label="Last tested" />
+                    <ColHeader icon={<Globe className="h-3.5 w-3.5" />} label="Uptime" />
+                    <ColHeader icon={<Gauge className="h-3.5 w-3.5" />} label="Performance" />
+                    <ColHeader icon={<Calendar className="h-3.5 w-3.5" />} label="Monitoring" />
+                    <th className="px-3 py-3" aria-label="Actions" />
                   </tr>
                 </thead>
                 <tbody>
@@ -229,53 +243,80 @@ export function DashboardClient({ initialFilters }: { initialFilters: DashboardF
                     return (
                       <tr
                         key={project.id}
-                        className="border-t border-line-2 align-top hover:bg-hover"
+                        className="group border-t border-line-2 align-middle hover:bg-hover"
                       >
-                        <td className="px-5 py-3">
-                          <Link
-                            href={`/projects/${project.id}`}
-                            className="block font-medium text-ink hover:underline"
-                          >
-                            {project.name}
-                          </Link>
-                          <p className="mt-0.5 text-xs text-ink-3">
-                            {project.productionUrl}
-                          </p>
+                        <td className="px-6 py-3">
+                          <div className="flex items-center gap-3">
+                            <ProjectAvatar name={project.name} status={project.status} />
+                            <div className="min-w-0">
+                              <Link
+                                href={`/projects/${project.id}`}
+                                className="block truncate font-medium text-ink hover:underline"
+                              >
+                                {project.name}
+                              </Link>
+                              <p className="mt-0.5 truncate text-xs text-ink-3">
+                                {project.productionUrl}
+                              </p>
+                            </div>
+                          </div>
                         </td>
                         <td className="px-3 py-3">
                           <Pill tone={statusTone(project.status)}>
                             {project.status[0] + project.status.slice(1).toLowerCase()}
                           </Pill>
                         </td>
-                        <td className="px-3 py-3 text-ink-2">{formatDate(project.lastRunAt)}</td>
-                        <td className="px-3 py-3 text-ink-2">
+                        <td className="px-3 py-3 text-ink-2 tabular-nums">{formatDate(project.lastRunAt)}</td>
+                        <td className="px-3 py-3">
                           {latestUptime ? (
                             <span
                               className={
                                 latestUptime.isUp
-                                  ? "text-success"
-                                  : "text-error"
+                                  ? "inline-flex items-center gap-1.5 text-success"
+                                  : "inline-flex items-center gap-1.5 text-error"
                               }
                             >
+                              <span className={`h-1.5 w-1.5 rounded-full ${latestUptime.isUp ? "bg-success" : "bg-error"}`} />
                               {latestUptime.isUp ? "Up" : "Down"}
                             </span>
                           ) : (
                             <span className="text-ink-3">No logs</span>
                           )}
                         </td>
-                        <td className="px-3 py-3 text-ink-2">
+                        <td className="px-3 py-3 text-ink-2 tabular-nums">
                           {latestLighthouse
                             ? `P ${latestLighthouse.performanceScore} · SEO ${latestLighthouse.seoScore}`
                             : project.performanceScore ?? "—"}
                         </td>
                         <td className="px-3 py-3 text-ink-2">
                           {project.monitoringActive ? (
-                            <span>
+                            <span className="inline-flex items-center gap-1.5">
+                              <span className="h-1.5 w-1.5 rounded-full bg-success" />
                               On · every {project.monitoringIntervalMinutes} min
                             </span>
                           ) : (
                             <span className="text-ink-3">Paused</span>
                           )}
+                        </td>
+                        <td className="px-3 py-3 text-right">
+                          <div className="inline-flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                            <Link
+                              href={`/projects/${project.id}`}
+                              className="grid h-8 w-8 place-items-center rounded-[6px] text-ink-3 hover:bg-surface hover:text-ink"
+                              aria-label="View project"
+                              title="View"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Link>
+                            <Link
+                              href={`/projects/${project.id}/edit`}
+                              className="grid h-8 w-8 place-items-center rounded-[6px] text-ink-3 hover:bg-surface hover:text-ink"
+                              aria-label="Edit project"
+                              title="Edit"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Link>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -287,6 +328,64 @@ export function DashboardClient({ initialFilters }: { initialFilters: DashboardF
         </Card>
       </section>
     </PageChrome>
+  );
+}
+
+function ColHeader({
+  icon,
+  label,
+  className
+}: {
+  icon: React.ReactNode;
+  label: string;
+  className?: string;
+}) {
+  return (
+    <th className={`px-3 py-3 font-medium ${className ?? ""}`}>
+      <span className="inline-flex items-center gap-1.5 text-ink-3">
+        <span className="text-ink-3">{icon}</span>
+        {label}
+      </span>
+    </th>
+  );
+}
+
+const AVATAR_PALETTE = [
+  { bg: "bg-tag-blue", fg: "text-[#1D4ED8]" },
+  { bg: "bg-tag-green", fg: "text-[#15803D]" },
+  { bg: "bg-tag-orange", fg: "text-[#B45309]" },
+  { bg: "bg-tag-pink", fg: "text-[#BE123C]" },
+  { bg: "bg-[#EDE9FE]", fg: "text-[#6D28D9]" }
+];
+
+function ProjectAvatar({ name, status }: { name: string; status: string }) {
+  // Pick a stable palette index based on the project name so the avatar
+  // colour stays consistent across re-renders. Failing/down projects get
+  // a rose tint regardless so the dashboard reads "needs attention" at
+  // a glance.
+  const initials = name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("");
+
+  const fallbackIndex =
+    name.split("").reduce((sum, ch) => sum + ch.charCodeAt(0), 0) % AVATAR_PALETTE.length;
+  const palette =
+    status === "DOWN"
+      ? AVATAR_PALETTE[3]
+      : status === "WARNING"
+        ? AVATAR_PALETTE[2]
+        : AVATAR_PALETTE[fallbackIndex];
+
+  return (
+    <div
+      className={`grid h-9 w-9 shrink-0 place-items-center rounded-full text-xs font-semibold ${palette.bg} ${palette.fg}`}
+      aria-hidden="true"
+    >
+      {initials || "•"}
+    </div>
   );
 }
 

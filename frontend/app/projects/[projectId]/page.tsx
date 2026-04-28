@@ -1,6 +1,17 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Activity, Calendar, ExternalLink, FileDown, Globe } from "lucide-react";
+import {
+  Activity,
+  Calendar,
+  ExternalLink,
+  Eye,
+  FileDown,
+  FileText,
+  Gauge,
+  Globe,
+  Hash,
+  PlayCircle
+} from "lucide-react";
 import { PageChrome } from "@/components/ui/page-chrome";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { StatTile } from "@/components/ui/stat-tile";
@@ -273,17 +284,18 @@ function RunsTab({ project }: { project: Project }) {
   return (
     <Card>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[820px] border-collapse text-sm">
+        <table className="w-full min-w-[920px] border-collapse text-sm">
           <thead>
             <tr className="text-left text-xs font-medium text-ink-3">
-              <th className="px-5 py-3 font-medium">Run</th>
-              <th className="px-3 py-3 font-medium">Status</th>
-              <th className="px-3 py-3 font-medium">Performance</th>
-              <th className="px-3 py-3 font-medium">SEO</th>
-              <th className="px-3 py-3 font-medium">A11y</th>
-              <th className="px-3 py-3 font-medium">Pages</th>
-              <th className="px-3 py-3 font-medium">HubSpot</th>
-              <th className="px-3 py-3 font-medium">Started</th>
+              <RunColHeader icon={<PlayCircle className="h-3.5 w-3.5" />} label="Run" className="px-6" />
+              <RunColHeader icon={<Activity className="h-3.5 w-3.5" />} label="Status" />
+              <RunColHeader icon={<Gauge className="h-3.5 w-3.5" />} label="Performance" />
+              <RunColHeader icon={<Hash className="h-3.5 w-3.5" />} label="SEO" />
+              <RunColHeader icon={<Hash className="h-3.5 w-3.5" />} label="A11y" />
+              <RunColHeader icon={<FileText className="h-3.5 w-3.5" />} label="Pages" />
+              <RunColHeader icon={<FileText className="h-3.5 w-3.5" />} label="HubSpot" />
+              <RunColHeader icon={<Calendar className="h-3.5 w-3.5" />} label="Started" />
+              <th className="px-3 py-3" aria-label="Actions" />
             </tr>
           </thead>
           <tbody>
@@ -305,24 +317,24 @@ function RunsTab({ project }: { project: Project }) {
               return (
                 <tr
                   key={run.id}
-                  className="border-t border-line-2 align-top hover:bg-hover"
+                  className="group border-t border-line-2 align-middle hover:bg-hover"
                 >
-                  <td className="px-5 py-3">
+                  <td className="px-6 py-3">
                     <Link
                       href={`/projects/${project.id}/runs/${run.id}`}
                       className="font-medium text-ink hover:underline"
                     >
                       {run.environment}
                     </Link>
-                    <p className="mt-0.5 text-xs text-ink-3">{run.id.slice(0, 8)}…</p>
+                    <p className="mt-0.5 font-mono text-xs text-ink-3">{run.id.slice(0, 8)}…</p>
                   </td>
                   <td className="px-3 py-3">
                     <Pill tone={statusTone(run.status)}>{run.status}</Pill>
                   </td>
-                  <td className="px-3 py-3 text-ink-2">{run.performanceScore ?? "—"}</td>
-                  <td className="px-3 py-3 text-ink-2">{run.seoScore ?? "—"}</td>
-                  <td className="px-3 py-3 text-ink-2">{run.accessibility ?? "—"}</td>
-                  <td className="px-3 py-3 text-ink-2">{payload.sitemap?.testedPages ?? "—"}</td>
+                  <td className="px-3 py-3 tabular-nums text-ink-2">{run.performanceScore ?? "—"}</td>
+                  <td className="px-3 py-3 tabular-nums text-ink-2">{run.seoScore ?? "—"}</td>
+                  <td className="px-3 py-3 tabular-nums text-ink-2">{run.accessibility ?? "—"}</td>
+                  <td className="px-3 py-3 tabular-nums text-ink-2">{payload.sitemap?.testedPages ?? "—"}</td>
                   <td className="px-3 py-3 text-ink-2">
                     {hubspotFound === 0 ? (
                       <span className="text-ink-3">—</span>
@@ -338,7 +350,17 @@ function RunsTab({ project }: { project: Project }) {
                       </>
                     )}
                   </td>
-                  <td className="px-3 py-3 text-ink-2">{formatDate(run.startedAt)}</td>
+                  <td className="px-3 py-3 tabular-nums text-ink-2">{formatDate(run.startedAt)}</td>
+                  <td className="px-3 py-3 text-right">
+                    <Link
+                      href={`/projects/${project.id}/runs/${run.id}`}
+                      aria-label="View run report"
+                      title="View"
+                      className="inline-grid h-8 w-8 place-items-center rounded-[6px] text-ink-3 opacity-0 transition-opacity hover:bg-surface hover:text-ink group-hover:opacity-100"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Link>
+                  </td>
                 </tr>
               );
             })}
@@ -346,6 +368,25 @@ function RunsTab({ project }: { project: Project }) {
         </table>
       </div>
     </Card>
+  );
+}
+
+function RunColHeader({
+  icon,
+  label,
+  className
+}: {
+  icon: React.ReactNode;
+  label: string;
+  className?: string;
+}) {
+  return (
+    <th className={`px-3 py-3 font-medium ${className ?? ""}`}>
+      <span className="inline-flex items-center gap-1.5 text-ink-3">
+        <span className="text-ink-3">{icon}</span>
+        {label}
+      </span>
+    </th>
   );
 }
 
