@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Plus, Search, FolderOpen, CheckCircle2, AlertTriangle, AlertOctagon } from "lucide-react";
 import { PageChrome } from "@/components/ui/page-chrome";
 import { Card, CardHeader } from "@/components/ui/card";
@@ -10,6 +11,8 @@ import { Pill, statusTone } from "@/components/ui/pill";
 import { Button } from "@/components/ui/button";
 import { FilterTabs, type FilterTab } from "@/components/ui/filter-tabs";
 import { Input, Select } from "@/components/ui/input";
+import { SlideOver } from "@/components/ui/slide-over";
+import { ProjectForm } from "@/components/project-form";
 import { formatDate } from "@/lib/utils";
 import type { ProjectWithRelations } from "@/lib/types";
 
@@ -30,6 +33,7 @@ function buildQuery(filters: DashboardFilters) {
 }
 
 export function DashboardClient({ initialFilters }: { initialFilters: DashboardFilters }) {
+  const router = useRouter();
   const [projects, setProjects] = useState<ProjectWithRelations[]>([]);
   const [error, setError] = useState("");
   const [isPending, startTransition] = useTransition();
@@ -37,6 +41,7 @@ export function DashboardClient({ initialFilters }: { initialFilters: DashboardF
   const [search, setSearch] = useState(initialFilters.search ?? "");
   const [sort, setSort] = useState(initialFilters.sort);
   const [monitoring, setMonitoring] = useState(initialFilters.monitoring);
+  const [createOpen, setCreateOpen] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -102,12 +107,28 @@ export function DashboardClient({ initialFilters }: { initialFilters: DashboardF
       title="Dashboard"
       subtitle="Monitor every site you've registered. Healthy first, attention-needed second — fix what's broken."
       actions={
-        <Button href="/projects/new" variant="primary">
+        <Button variant="primary" onClick={() => setCreateOpen(true)}>
           <Plus className="h-4 w-4" />
           New project
         </Button>
       }
     >
+      <SlideOver
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        title="Create project"
+        description="Register a site, attach it to monitoring, and prepare it for sitemap-based QA."
+      >
+        <ProjectForm
+          mode="create"
+          onCancel={() => setCreateOpen(false)}
+          onSuccess={(projectId) => {
+            setCreateOpen(false);
+            router.push(`/projects/${projectId}`);
+            router.refresh();
+          }}
+        />
+      </SlideOver>
       <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         <StatTile
           label="Total projects"
@@ -183,7 +204,11 @@ export function DashboardClient({ initialFilters }: { initialFilters: DashboardF
           </div>
 
           {filteredProjects.length === 0 ? (
-            <EmptyProjects isPending={isPending} hasAnyProject={projects.length > 0} />
+            <EmptyProjects
+              isPending={isPending}
+              hasAnyProject={projects.length > 0}
+              onCreate={() => setCreateOpen(true)}
+            />
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full min-w-[820px] border-collapse text-sm">
@@ -267,10 +292,12 @@ export function DashboardClient({ initialFilters }: { initialFilters: DashboardF
 
 function EmptyProjects({
   isPending,
-  hasAnyProject
+  hasAnyProject,
+  onCreate
 }: {
   isPending: boolean;
   hasAnyProject: boolean;
+  onCreate: () => void;
 }) {
   if (isPending) {
     return (
@@ -296,7 +323,7 @@ function EmptyProjects({
         </p>
       </div>
       <div>
-        <Button href="/projects/new" variant="primary">
+        <Button variant="primary" onClick={onCreate}>
           <Plus className="h-4 w-4" />
           Create your first project
         </Button>

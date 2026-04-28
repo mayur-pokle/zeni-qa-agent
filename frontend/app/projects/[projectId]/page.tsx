@@ -26,14 +26,9 @@ export default async function ProjectDetailPage({
     notFound();
   }
 
-  const errorLogs = project.errorLogs ?? [];
-
   // Counts for tab badges so the user can see at a glance how many
   // entries each tab holds without switching to it.
   const runCount = project.qaRuns.length;
-  const lighthouseCount = project.lighthouseReports.length;
-  const uptimeCount = project.uptimeLogs.length;
-  const errorCount = errorLogs.length;
 
   return (
     <PageChrome
@@ -146,24 +141,6 @@ export default async function ProjectDetailPage({
               label: "QA Runs",
               count: runCount,
               content: <RunsTab project={project} />
-            },
-            {
-              value: "lighthouse",
-              label: "Lighthouse",
-              count: lighthouseCount,
-              content: <LighthouseTab project={project} />
-            },
-            {
-              value: "uptime",
-              label: "Uptime",
-              count: uptimeCount,
-              content: <UptimeTab project={project} />
-            },
-            {
-              value: "errors",
-              label: "Errors",
-              count: errorCount,
-              content: <ErrorsTab project={project} />
             }
           ]}
         />
@@ -372,144 +349,3 @@ function RunsTab({ project }: { project: Project }) {
   );
 }
 
-function LighthouseTab({ project }: { project: Project }) {
-  if (project.lighthouseReports.length === 0) {
-    return (
-      <Card>
-        <CardBody>
-          <p className="text-sm text-ink-3">No Lighthouse audits captured yet.</p>
-        </CardBody>
-      </Card>
-    );
-  }
-  return (
-    <div className="grid gap-4 md:grid-cols-2">
-      {project.lighthouseReports.map((report) => {
-        const tone =
-          report.performanceScore < 60 || report.seoScore < 60 || report.accessibilityScore < 60
-            ? "error"
-            : report.performanceScore < 80 || report.seoScore < 80 || report.accessibilityScore < 80
-              ? "warning"
-              : "success";
-        return (
-          <Card key={report.id}>
-            <CardBody>
-              <div className="flex items-center justify-between gap-3">
-                <Pill tone={tone}>
-                  {report.environment}
-                </Pill>
-                <span className="text-xs text-ink-3">
-                  {formatDate(report.createdAt)}
-                </span>
-              </div>
-              <div className="mt-3 grid grid-cols-4 gap-2 text-center">
-                <ScoreCell label="Perf" value={report.performanceScore} />
-                <ScoreCell label="SEO" value={report.seoScore} />
-                <ScoreCell label="A11y" value={report.accessibilityScore} />
-                <ScoreCell label="BP" value={report.bestPracticesScore} />
-              </div>
-              <a
-                href={`/api/lighthouse-reports/${report.id}`}
-                target="_blank"
-                rel="noreferrer"
-                className="mt-3 inline-flex items-center gap-1 text-sm text-ink-2 hover:underline"
-              >
-                View full report
-                <ExternalLink className="h-3 w-3" />
-              </a>
-            </CardBody>
-          </Card>
-        );
-      })}
-    </div>
-  );
-}
-
-function ScoreCell({ label, value }: { label: string; value: number }) {
-  const tone =
-    value < 60 ? "text-error" : value < 80 ? "text-warning" : "text-success";
-  return (
-    <div className="rounded-[8px] bg-surface-2 py-2">
-      <div className={`text-lg font-semibold ${tone}`}>{value}</div>
-      <div className="text-xs text-ink-3">{label}</div>
-    </div>
-  );
-}
-
-function UptimeTab({ project }: { project: Project }) {
-  if (project.uptimeLogs.length === 0) {
-    return (
-      <Card>
-        <CardBody>
-          <p className="text-sm text-ink-3">No uptime checks recorded yet.</p>
-        </CardBody>
-      </Card>
-    );
-  }
-  return (
-    <Card>
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[640px] border-collapse text-sm">
-          <thead>
-            <tr className="text-left text-xs font-medium text-ink-3">
-              <th className="px-5 py-3 font-medium">Status</th>
-              <th className="px-3 py-3 font-medium">Environment</th>
-              <th className="px-3 py-3 font-medium">HTTP</th>
-              <th className="px-3 py-3 font-medium">Response</th>
-              <th className="px-3 py-3 font-medium">Checked at</th>
-              <th className="px-3 py-3 font-medium">Error</th>
-            </tr>
-          </thead>
-          <tbody>
-            {project.uptimeLogs.map((log) => (
-              <tr key={log.id} className="border-t border-line-2 hover:bg-hover">
-                <td className="px-5 py-3">
-                  <Pill tone={log.isUp ? "success" : "error"}>
-                    {log.isUp ? "Up" : "Down"}
-                  </Pill>
-                </td>
-                <td className="px-3 py-3 text-ink-2">{log.environment}</td>
-                <td className="px-3 py-3 text-ink-2">{log.statusCode ?? "—"}</td>
-                <td className="px-3 py-3 text-ink-2">
-                  {log.responseMs ? `${log.responseMs} ms` : "—"}
-                </td>
-                <td className="px-3 py-3 text-ink-2">{formatDate(log.checkedAt)}</td>
-                <td className="px-3 py-3 text-ink-2">{log.errorDetails ?? ""}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </Card>
-  );
-}
-
-function ErrorsTab({ project }: { project: Project }) {
-  const errorLogs = project.errorLogs ?? [];
-  if (errorLogs.length === 0) {
-    return (
-      <Card>
-        <CardBody>
-          <p className="text-sm text-ink-3">No error logs captured for this project yet.</p>
-        </CardBody>
-      </Card>
-    );
-  }
-  return (
-    <div className="space-y-2">
-      {errorLogs.map((log) => (
-        <Card key={log.id}>
-          <CardBody className="space-y-2">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <Pill tone={log.severity.toLowerCase() === "error" ? "error" : "warning"}>
-                {log.environment} · {log.severity}
-              </Pill>
-              <span className="text-xs text-ink-3">{formatDate(log.createdAt)}</span>
-            </div>
-            <p className="text-sm leading-relaxed text-ink">{log.message}</p>
-          </CardBody>
-        </Card>
-      ))}
-    </div>
-  );
-}
