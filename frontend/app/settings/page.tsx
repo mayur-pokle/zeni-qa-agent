@@ -1,4 +1,4 @@
-import { Shell } from "@/components/shell";
+import { PageChrome } from "@/components/ui/page-chrome";
 import { ConnectionsForm } from "@/components/connections-form";
 import { getConnectionStateForApp } from "@/lib/app-data";
 import { requireAuthenticatedRoute } from "@/lib/session";
@@ -8,11 +8,11 @@ export default async function SettingsPage() {
   const connectionState = await getConnectionStateForApp();
 
   return (
-    <Shell
+    <PageChrome
       title="Settings"
-      description="UptimeRobot and Gmail defaults come from the backend environment. Override any field to test with different values — changes are not persisted."
+      subtitle="UptimeRobot, Email, and Slack defaults come from the backend environment. Override any field to test — overrides are not persisted."
     >
       <ConnectionsForm envDefaults={connectionState.settings} />
-    </Shell>
+    </PageChrome>
   );
 }

@@ -1,6 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { Activity, Bell, Mail } from "lucide-react";
+import { Card, CardBody, CardHeader } from "@/components/ui/card";
+import { Pill } from "@/components/ui/pill";
+import { Input } from "@/components/ui/input";
 import type { ConnectionStatus } from "@/lib/app-data";
 
 type Settings = ConnectionStatus["settings"];
@@ -9,7 +13,6 @@ type Props = {
   envDefaults: Settings;
 };
 
-// Environment variable name shown next to each field
 const ENV_NAME: Record<keyof Settings, string> = {
   uptimeRobotApiKey: "UPTIMEROBOT_API_KEY",
   smtpHost: "SMTP_HOST",
@@ -30,7 +33,7 @@ function maskSecret(value: string) {
   return value.slice(0, 3) + "•".repeat(Math.max(4, value.length - 6)) + value.slice(-3);
 }
 
-function Field({
+function ConnectionField({
   label,
   name,
   value,
@@ -60,45 +63,38 @@ function Field({
     : "(not set in .env)";
 
   return (
-    <label className="grid gap-2 text-sm uppercase tracking-[0.24em]">
-      <span className="flex flex-wrap items-center gap-2">
-        {label}
-        <span className="rounded border border-[#f5f5f4]/20 px-2 py-0.5 font-mono text-[10px] normal-case tracking-wide text-[#f5f5f4]/60">
+    <div className="grid gap-1.5">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-sm font-medium text-ink-2">{label}</span>
+        <span className="rounded-[6px] bg-surface-2 px-1.5 py-0.5 font-mono text-xs text-ink-3">
           {envName}
         </span>
         {overridden ? (
-          <span className="rounded border border-[#fbbf24]/40 px-2 py-0.5 text-[10px] normal-case tracking-wide text-[#fbbf24]">
-            overridden
-          </span>
+          <Pill tone="warning">Overridden</Pill>
         ) : envPresent ? (
-          <span className="rounded border border-[#86efac]/40 px-2 py-0.5 text-[10px] normal-case tracking-wide text-[#bbf7d0]">
-            from .env
-          </span>
+          <Pill tone="success">From .env</Pill>
         ) : (
-          <span className="rounded border border-[#fca5a5]/40 px-2 py-0.5 text-[10px] normal-case tracking-wide text-[#fecaca]">
-            missing in .env
-          </span>
+          <Pill tone="error">Missing</Pill>
         )}
-      </span>
-      <input
+      </div>
+      <Input
         name={String(name)}
         type={type}
         value={value}
         placeholder={placeholder}
         onChange={(event) => onChange(name, event.target.value)}
-        className="border border-[#f5f5f4]/20 bg-transparent px-4 py-3 text-sm normal-case tracking-normal outline-none focus:border-[#f5f5f4]/60"
       />
-      <span className="flex items-center gap-2 text-[10px] normal-case tracking-wider text-[#f5f5f4]/50">
-        <span className="text-[#f5f5f4]/40">.env →</span>
-        <span className="font-mono text-[#f5f5f4]/70">{envDisplay}</span>
+      <span className="flex items-center gap-1 text-xs text-ink-3">
+        <span>.env →</span>
+        <span className="font-mono break-all">{envDisplay}</span>
       </span>
-    </label>
+    </div>
   );
 }
 
 export function ConnectionsForm({ envDefaults }: Props) {
   const [form, setForm] = useState<Settings>(envDefaults);
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState<{ tone: "info" | "success" | "error"; text: string } | null>(null);
   const [pending, setPending] = useState<"uptime" | "email" | "slack" | null>(null);
 
   function update<K extends keyof Settings>(name: K, value: Settings[K]) {
@@ -107,18 +103,20 @@ export function ConnectionsForm({ envDefaults }: Props) {
 
   function resetToEnv() {
     setForm(envDefaults);
-    setMessage("Form reset to .env values.");
+    setMessage({ tone: "info", text: "Form reset to .env values." });
   }
 
   async function runTest(type: "uptime" | "email" | "slack") {
     setPending(type);
-    setMessage(
-      type === "uptime"
-        ? "Testing UptimeRobot..."
-        : type === "email"
-          ? "Sending test email..."
-          : "Posting test Slack message..."
-    );
+    setMessage({
+      tone: "info",
+      text:
+        type === "uptime"
+          ? "Testing UptimeRobot…"
+          : type === "email"
+            ? "Sending test email…"
+            : "Posting test Slack message…"
+    });
     try {
       const endpoint =
         type === "uptime"
@@ -132,9 +130,16 @@ export function ConnectionsForm({ envDefaults }: Props) {
         body: JSON.stringify(form)
       });
       const data = await response.json().catch(() => null);
-      setMessage(data?.message ?? data?.error ?? "Test finished.");
+      const text = data?.message ?? data?.error ?? "Test finished.";
+      setMessage({
+        tone: response.ok ? "success" : "error",
+        text
+      });
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Test failed.");
+      setMessage({
+        tone: "error",
+        text: error instanceof Error ? error.message : "Test failed."
+      });
     } finally {
       setPending(null);
     }
@@ -148,186 +153,223 @@ export function ConnectionsForm({ envDefaults }: Props) {
     return Boolean(value);
   }).length;
 
-  return (
-    <div className="grid gap-6 border border-[#f5f5f4]/20 p-6">
-      <header className="flex flex-wrap items-start justify-between gap-4">
-        <div className="max-w-xl">
-          <p className="text-xs uppercase tracking-[0.3em] text-[#f5f5f4]/60">Connections</p>
-          <h2 className="mt-2 text-lg uppercase tracking-[0.18em]">Alerts &amp; Integrations</h2>
-          <p className="mt-2 text-sm leading-6 text-[#f5f5f4]/72">
-            Values are loaded from the backend environment (<code className="font-mono text-[#f5f5f4]/90">backend/.env</code> locally, Railway variables in production).
-            Edit any field to test with an override — overrides are not persisted.
-          </p>
-          <p className="mt-2 text-xs uppercase tracking-[0.22em] text-[#f5f5f4]/50">
-            {envSetCount} of {keys.length} variables present in environment
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={resetToEnv}
-          disabled={!changedFromEnv}
-          className="ui-button disabled:opacity-40"
-        >
-          Reset To .env
-        </button>
-      </header>
+  const primaryBtn =
+    "inline-flex h-9 items-center gap-2 rounded-[8px] bg-brand px-3 text-sm font-medium !text-white transition-colors hover:bg-[#1D4ED8] active:bg-[#1E40AF] disabled:cursor-not-allowed disabled:opacity-60";
+  const secondaryBtn =
+    "inline-flex h-9 items-center gap-2 rounded-[8px] border border-line bg-surface px-3 text-sm font-medium text-ink hover:bg-hover hover:border-ink-3 disabled:cursor-not-allowed disabled:opacity-60";
 
-      <section className="grid gap-4 border-t border-[#f5f5f4]/10 pt-6">
-        <div>
-          <p className="text-xs uppercase tracking-[0.3em] text-[#f5f5f4]/60">Step 1</p>
-          <h3 className="mt-2 text-lg uppercase tracking-[0.18em]">UptimeRobot</h3>
-        </div>
-        <Field
-          label="UptimeRobot API Key"
-          name="uptimeRobotApiKey"
-          type="password"
-          secret
-          value={form.uptimeRobotApiKey}
-          envValue={envDefaults.uptimeRobotApiKey}
-          onChange={update}
-          placeholder="ur1234567-abc..."
-        />
-        <div>
+  return (
+    <div className="grid gap-4">
+      {/* Top summary banner */}
+      <Card>
+        <CardBody className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-base font-semibold text-ink">Alerts &amp; integrations</h2>
+            <p className="mt-1 text-sm text-ink-2">
+              {envSetCount} of {keys.length} env vars present. Edit any field below to test with an
+              override.
+            </p>
+          </div>
           <button
             type="button"
-            onClick={() => runTest("uptime")}
-            disabled={pending === "uptime"}
-            className="ui-button"
+            onClick={resetToEnv}
+            disabled={!changedFromEnv}
+            className={secondaryBtn}
           >
-            {pending === "uptime" ? "Testing..." : "Test Uptime Connection"}
+            Reset to .env
           </button>
-        </div>
-      </section>
+        </CardBody>
+      </Card>
 
-      <section className="grid gap-4 border-t border-[#f5f5f4]/10 pt-6">
-        <div>
-          <p className="text-xs uppercase tracking-[0.3em] text-[#f5f5f4]/60">Step 2</p>
-          <h3 className="mt-2 text-lg uppercase tracking-[0.18em]">Email Alerts</h3>
-          <p className="mt-2 text-sm leading-6 text-[#f5f5f4]/72">
-            On Railway, outbound SMTP (ports 25/465/587) is blocked. Set{" "}
-            <code className="font-mono text-[#f5f5f4]/90">RESEND_API_KEY</code> to send via Resend&apos;s HTTP API —
-            the app automatically prefers Resend when the key is present, and falls back to Gmail SMTP otherwise (works locally).
-          </p>
-        </div>
-        <Field
-          label="Resend API Key (recommended)"
-          name="resendApiKey"
-          type="password"
-          secret
-          value={form.resendApiKey}
-          envValue={envDefaults.resendApiKey}
-          onChange={update}
-          placeholder="re_..."
+      <Card>
+        <CardHeader
+          title={
+            <span className="inline-flex items-center gap-2">
+              <Activity className="h-4 w-4 text-icon" />
+              UptimeRobot
+            </span>
+          }
+          subtitle="Optional. Mirrors Flowtest's internal monitoring with UptimeRobot's separate uptime checks."
         />
-        <div className="grid gap-4 md:grid-cols-2">
-          <Field
-            label="SMTP Host"
-            name="smtpHost"
-            value={form.smtpHost}
-            envValue={envDefaults.smtpHost}
-            onChange={update}
-          />
-          <Field
-            label="SMTP Port"
-            name="smtpPort"
-            type="number"
-            value={form.smtpPort}
-            envValue={envDefaults.smtpPort}
-            onChange={update}
-          />
-          <Field
-            label="SMTP User"
-            name="smtpUser"
-            type="email"
-            value={form.smtpUser}
-            envValue={envDefaults.smtpUser}
-            onChange={update}
-          />
-          <Field
-            label="Gmail App Password"
-            name="smtpPassword"
+        <CardBody className="grid gap-4">
+          <ConnectionField
+            label="UptimeRobot API key"
+            name="uptimeRobotApiKey"
             type="password"
             secret
-            value={form.smtpPassword}
-            envValue={envDefaults.smtpPassword}
+            value={form.uptimeRobotApiKey}
+            envValue={envDefaults.uptimeRobotApiKey}
             onChange={update}
+            placeholder="ur1234567-abc…"
           />
-          <Field
-            label="From Email"
-            name="smtpFrom"
-            type="email"
-            value={form.smtpFrom}
-            envValue={envDefaults.smtpFrom}
-            onChange={update}
-          />
-          <Field
-            label="Alert Email"
-            name="alertEmail"
-            type="email"
-            value={form.alertEmail}
-            envValue={envDefaults.alertEmail}
-            onChange={update}
-          />
-        </div>
-        <label className="flex items-center gap-3 text-xs uppercase tracking-[0.28em] text-[#f5f5f4]/70">
-          <input
-            type="checkbox"
-            checked={form.smtpSecure}
-            onChange={(event) => setForm((prev) => ({ ...prev, smtpSecure: event.target.checked }))}
-            className="h-4 w-4 accent-[#f5f5f4]"
-          />
-          Use secure SMTP connection (TLS)
-          <span className="ml-2 rounded border border-[#f5f5f4]/20 px-2 py-0.5 font-mono text-[10px] normal-case tracking-wide text-[#f5f5f4]/60">
-            SMTP_SECURE
-          </span>
-          <span className="font-mono text-[10px] normal-case tracking-wide text-[#f5f5f4]/50">
-            .env → {String(envDefaults.smtpSecure)}
-          </span>
-        </label>
-        <div>
-          <button
-            type="button"
-            onClick={() => runTest("email")}
-            disabled={pending === "email"}
-            className="ui-button"
-          >
-            {pending === "email" ? "Sending..." : "Send Test Email"}
-          </button>
-        </div>
-      </section>
+          <div>
+            <button
+              type="button"
+              onClick={() => runTest("uptime")}
+              disabled={pending === "uptime"}
+              className={primaryBtn}
+            >
+              {pending === "uptime" ? "Testing…" : "Test connection"}
+            </button>
+          </div>
+        </CardBody>
+      </Card>
 
-      <section className="grid gap-4 border-t border-[#f5f5f4]/10 pt-6">
-        <div>
-          <p className="text-xs uppercase tracking-[0.3em] text-[#f5f5f4]/60">Step 3</p>
-          <h3 className="mt-2 text-lg uppercase tracking-[0.18em]">Slack</h3>
-          <p className="mt-2 text-sm leading-6 text-[#f5f5f4]/72">
-            Optional. When set, alerts are also posted to the Slack Incoming Webhook URL.
-          </p>
-        </div>
-        <Field
-          label="Slack Webhook URL"
-          name="slackWebhookUrl"
-          type="password"
-          secret
-          value={form.slackWebhookUrl}
-          envValue={envDefaults.slackWebhookUrl}
-          onChange={update}
-          placeholder="https://hooks.slack.com/services/..."
+      <Card>
+        <CardHeader
+          title={
+            <span className="inline-flex items-center gap-2">
+              <Mail className="h-4 w-4 text-icon" />
+              Email alerts
+            </span>
+          }
+          subtitle="Resend (HTTP API) is preferred when set; Gmail SMTP is the local-only fallback."
         />
-        <div>
-          <button
-            type="button"
-            onClick={() => runTest("slack")}
-            disabled={pending === "slack"}
-            className="ui-button"
-          >
-            {pending === "slack" ? "Posting..." : "Send Test Slack Message"}
-          </button>
-        </div>
-      </section>
+        <CardBody className="grid gap-4">
+          <ConnectionField
+            label="Resend API key (recommended)"
+            name="resendApiKey"
+            type="password"
+            secret
+            value={form.resendApiKey}
+            envValue={envDefaults.resendApiKey}
+            onChange={update}
+            placeholder="re_…"
+          />
+          <ConnectionField
+            label="Resend From"
+            name="resendFrom"
+            type="email"
+            value={form.resendFrom}
+            envValue={envDefaults.resendFrom}
+            onChange={update}
+          />
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <ConnectionField
+              label="SMTP host"
+              name="smtpHost"
+              value={form.smtpHost}
+              envValue={envDefaults.smtpHost}
+              onChange={update}
+            />
+            <ConnectionField
+              label="SMTP port"
+              name="smtpPort"
+              type="number"
+              value={form.smtpPort}
+              envValue={envDefaults.smtpPort}
+              onChange={update}
+            />
+            <ConnectionField
+              label="SMTP user"
+              name="smtpUser"
+              type="email"
+              value={form.smtpUser}
+              envValue={envDefaults.smtpUser}
+              onChange={update}
+            />
+            <ConnectionField
+              label="Gmail app password"
+              name="smtpPassword"
+              type="password"
+              secret
+              value={form.smtpPassword}
+              envValue={envDefaults.smtpPassword}
+              onChange={update}
+            />
+            <ConnectionField
+              label="From email"
+              name="smtpFrom"
+              type="email"
+              value={form.smtpFrom}
+              envValue={envDefaults.smtpFrom}
+              onChange={update}
+            />
+            <ConnectionField
+              label="Alert email"
+              name="alertEmail"
+              type="email"
+              value={form.alertEmail}
+              envValue={envDefaults.alertEmail}
+              onChange={update}
+            />
+          </div>
+
+          <label className="flex items-center gap-3 rounded-[8px] border border-line bg-surface px-4 py-3 text-sm text-ink">
+            <input
+              type="checkbox"
+              checked={form.smtpSecure}
+              onChange={(event) =>
+                setForm((prev) => ({ ...prev, smtpSecure: event.target.checked }))
+              }
+              className="h-4 w-4 rounded accent-[#2563EB]"
+            />
+            <span className="flex-1">Use secure SMTP connection (TLS)</span>
+            <span className="rounded-[6px] bg-surface-2 px-1.5 py-0.5 font-mono text-xs text-ink-3">
+              SMTP_SECURE
+            </span>
+          </label>
+
+          <div>
+            <button
+              type="button"
+              onClick={() => runTest("email")}
+              disabled={pending === "email"}
+              className={primaryBtn}
+            >
+              {pending === "email" ? "Sending…" : "Send test email"}
+            </button>
+          </div>
+        </CardBody>
+      </Card>
+
+      <Card>
+        <CardHeader
+          title={
+            <span className="inline-flex items-center gap-2">
+              <Bell className="h-4 w-4 text-icon" />
+              Slack
+            </span>
+          }
+          subtitle="Optional. Posts QA-completion alerts to an Incoming Webhook URL."
+        />
+        <CardBody className="grid gap-4">
+          <ConnectionField
+            label="Slack webhook URL"
+            name="slackWebhookUrl"
+            type="password"
+            secret
+            value={form.slackWebhookUrl}
+            envValue={envDefaults.slackWebhookUrl}
+            onChange={update}
+            placeholder="https://hooks.slack.com/services/…"
+          />
+          <div>
+            <button
+              type="button"
+              onClick={() => runTest("slack")}
+              disabled={pending === "slack"}
+              className={primaryBtn}
+            >
+              {pending === "slack" ? "Posting…" : "Send test Slack message"}
+            </button>
+          </div>
+        </CardBody>
+      </Card>
 
       {message ? (
-        <p className="border border-[#f5f5f4]/20 p-4 text-sm text-[#f5f5f4]/80">{message}</p>
+        <div
+          className={
+            message.tone === "success"
+              ? "rounded-[8px] bg-tag-green px-4 py-3 text-sm text-success"
+              : message.tone === "error"
+                ? "rounded-[8px] bg-tag-pink px-4 py-3 text-sm text-error"
+                : "rounded-[8px] bg-tag-blue px-4 py-3 text-sm text-info"
+          }
+        >
+          {message.text}
+        </div>
       ) : null}
     </div>
   );
