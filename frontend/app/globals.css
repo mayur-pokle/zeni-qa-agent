@@ -1,60 +1,52 @@
-@import url("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap");
 @import "tailwindcss";
 
 /*
- * Design tokens for the Phase 2+ light redesign.
+ * Phase 4 design tokens (blue-based light theme).
  *
- * These are registered through Tailwind v4's @theme block so they can be
- * used as utility classes (e.g. `bg-canvas`, `text-ink`, `border-line`,
- * `bg-tag-green`). They live alongside — and intentionally don't
- * replace — the legacy dark-theme `--background` / `--foreground`
- * variables below, which keeps every existing page rendering as before
- * until that page is ported over.
- *
- * Mapping back to the design brief:
- *   bg-primary    → bg-canvas        (page background)
- *   bg-secondary  → bg-surface       (card background)
- *   bg-tertiary   → bg-surface-2
+ * Mapping back to the brief in this turn:
+ *   bg-primary    → bg-canvas        (page bg, #F5F6F8)
+ *   bg-card       → bg-surface       (white)
+ *   bg-sidebar    → bg-sidebar
  *   bg-hover      → bg-hover
- *   text-primary  → text-ink
- *   text-secondary → text-ink-2
- *   text-muted    → text-ink-3
- *   text-inverse  → text-ink-inverse
- *   border-default → border-line
- *   border-subtle  → border-line-2
- *   icon-default  → text-icon
- *   icon-bg       → bg-icon-bg
- *   accent-primary → bg-brand / text-brand
- *   accent-blue   → bg-brand-blue
- *   accent-orange → bg-brand-orange
- *   success/error/warning/info/purple → same names
- *   tag-*         → bg-tag-*
- *   chart-*       → text-chart-*
+ *   text-primary  → text-ink         (#111827)
+ *   text-secondary → text-ink-2      (#4B5563)
+ *   text-muted    → text-ink-3       (#9CA3AF)
+ *   accent-primary → bg-brand        (#2563EB)
+ *   accent-secondary → bg-brand-2    (#3B82F6)
+ *   accent-light  → bg-brand-light   (#60A5FA)
+ *   border        → border-line      (#E5E7EB)
+ *   divider       → border-line-2    (#EDF1F5)
+ *
+ * Status: success/warning/error/info/purple keep semantic names.
+ * Tag tints (tag-green/orange/pink/blue) stay for soft chip backgrounds.
  */
 @theme inline {
   /* Surfaces */
-  --color-canvas: #F7F9FB;
+  --color-canvas: #F5F6F8;
   --color-surface: #FFFFFF;
-  --color-surface-2: #F5F7FA;
-  --color-sidebar: #FFFFFF;
+  --color-surface-2: #F8FAFC;
+  --color-sidebar: #F8FAFC;
   --color-hover: #F1F5F9;
 
   /* Text */
-  --color-ink: #0F172A;
-  --color-ink-2: #475569;
-  --color-ink-3: #94A3B8;
+  --color-ink: #111827;
+  --color-ink-2: #4B5563;
+  --color-ink-3: #9CA3AF;
   --color-ink-inverse: #FFFFFF;
 
   /* Borders & icons */
   --color-line: #E5E7EB;
-  --color-line-2: #EEF2F7;
+  --color-line-2: #EDF1F5;
   --color-icon: #64748B;
   --color-icon-bg: #F1F5F9;
 
-  /* Brand */
-  --color-brand: #0B2F2A;
+  /* Brand — blue family */
+  --color-brand: #2563EB;
+  --color-brand-2: #3B82F6;
+  --color-brand-light: #60A5FA;
   --color-brand-blue: #3B82F6;
-  --color-brand-orange: #F97316;
+  --color-brand-orange: #F59E0B;
 
   /* Status */
   --color-success: #22C55E;
@@ -65,13 +57,15 @@
 
   /* Tags / soft chips */
   --color-tag-orange: #FDEAD7;
-  --color-tag-blue: #E0F2FE;
+  --color-tag-blue: #DBEAFE;
   --color-tag-pink: #FCE7F3;
   --color-tag-green: #DCFCE7;
 
   /* Charts */
   --color-chart-blue: #3B82F6;
+  --color-chart-green: #22C55E;
   --color-chart-orange: #F59E0B;
+  --color-chart-red: #EF4444;
   --color-chart-grid: #E5E7EB;
 
   /* Radius */
@@ -80,15 +74,14 @@
   --radius-pill: 999px;
 
   /* Shadows — cards lift via shadow, not borders */
-  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.08);
+  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.06);
   --shadow-card-hover: 0 1px 3px rgba(15, 23, 42, 0.06), 0 4px 12px rgba(15, 23, 42, 0.08);
   --shadow-popover: 0 8px 24px rgba(15, 23, 42, 0.12);
 }
 
 :root {
-  /* Legacy dark-theme variables — still drive html/body background and
-   * existing components. Phase 3 will retire these once every page has
-   * moved to the token system above. */
+  /* Legacy dark-theme variables — retained only for any page that
+   * hasn't been ported. Phase 4 should remove the last legacy users. */
   --background: #292524;
   --foreground: #f5f5f4;
 }
@@ -106,7 +99,7 @@ body {
   min-height: 100vh;
   background: var(--background);
   color: var(--foreground);
-  font-family: "Roboto", "Inter", system-ui, sans-serif;
+  font-family: "Manrope", system-ui, sans-serif;
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -125,21 +118,34 @@ textarea {
   color: inherit;
 }
 
+/* All headings render in Manrope by default. Weight ladder per the
+ * brief: medium (500) for h4/h5/h6, semibold (600) for h1/h2/h3. */
 h1,
 h2,
-h3,
-h4,
-h5,
-h6,
-.heading-font {
-  font-family: "Bricolage Grotesque", "Manrope", sans-serif;
+h3 {
+  font-family: "Manrope", system-ui, sans-serif;
   font-weight: 600;
   letter-spacing: -0.01em;
 }
 
+h4,
+h5,
+h6,
+.heading-font {
+  font-family: "Manrope", system-ui, sans-serif;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+}
+
 ::selection {
-  background: var(--foreground);
-  color: var(--background);
+  background: var(--color-brand);
+  color: #ffffff;
+}
+
+/* Phase 4 utility for the brand gradient — used sparingly on hero
+ * accents and the primary CTA's hover sheen. */
+.bg-brand-gradient {
+  background-image: linear-gradient(135deg, #1D4ED8 0%, #3B82F6 100%);
 }
 
 .ui-button {

@@ -99,7 +99,7 @@ export function LoginForm() {
           type="checkbox"
           name="rememberMe"
           defaultChecked
-          className="h-4 w-4 rounded accent-[#0B2F2A]"
+          className="h-4 w-4 rounded accent-[#2563EB]"
         />
         Remember me for 30 days
       </label>
@@ -111,7 +111,7 @@ export function LoginForm() {
       <button
         type="submit"
         disabled={isPending}
-        className="inline-flex h-10 items-center justify-center gap-2 rounded-[8px] bg-brand px-4 text-sm font-medium !text-white transition-colors hover:bg-[#0E3D37] active:bg-[#072420] disabled:cursor-not-allowed disabled:opacity-60"
+        className="inline-flex h-10 items-center justify-center gap-2 rounded-[8px] bg-brand px-4 text-sm font-medium !text-white transition-colors hover:bg-[#1D4ED8] active:bg-[#1E40AF] disabled:cursor-not-allowed disabled:opacity-60"
       >
         {isPending ? "Signing in…" : "Sign in"}
       </button>

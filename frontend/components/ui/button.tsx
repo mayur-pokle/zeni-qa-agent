@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 /**
  * Three button variants.
  *
- *  primary   = bg-brand (#0B2F2A dark teal), white text — used for the
+ *  primary   = bg-brand (#2563EB blue), white text — used for the
  *              single most important action on a screen (Run QA, Save
  *              Project, Create Project). At most one per screen.
  *  secondary = surface bg with line border, ink text — used for Edit /
@@ -24,7 +24,7 @@ const VARIANT_CLASSES: Record<ButtonVariant, string> = {
   // Force `!text-white` so the inherited body color (`--foreground`,
   // still legacy `#f5f5f4` for now) can never bleed through onto the
   // primary button label.
-  primary: "bg-brand !text-white hover:bg-[#0E3D37] active:bg-[#072420]",
+  primary: "bg-brand !text-white hover:bg-[#1D4ED8] active:bg-[#1E40AF]",
   secondary:
     "bg-surface text-ink border border-line hover:bg-hover hover:border-ink-3",
   ghost: "text-ink-2 hover:bg-hover hover:text-ink"
