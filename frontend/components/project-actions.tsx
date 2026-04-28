@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { Play, Copy, Pencil, Trash2 } from "lucide-react";
 
 export function ProjectActions({
   projectId,
@@ -43,62 +44,75 @@ export function ProjectActions({
         projectId,
         environment
       })
-    })
-      .finally(() => {
-        setIsRunningQa(false);
-      });
+    }).finally(() => {
+      setIsRunningQa(false);
+    });
   }
 
+  const secondaryClasses =
+    "inline-flex h-9 items-center gap-2 rounded-[8px] border border-line bg-surface px-3 text-[13px] font-medium text-ink hover:bg-hover hover:border-ink-3 disabled:cursor-not-allowed disabled:opacity-60";
+
+  const primaryClasses =
+    "inline-flex h-9 items-center gap-2 rounded-[8px] bg-brand px-3 text-[13px] font-medium text-ink-inverse hover:bg-[#0E3D37] active:bg-[#072420] disabled:cursor-not-allowed disabled:opacity-60";
+
+  const dangerClasses =
+    "inline-flex h-9 items-center gap-2 rounded-[8px] border border-error/30 bg-tag-pink px-3 text-[13px] font-medium text-error hover:bg-tag-pink/80 disabled:cursor-not-allowed disabled:opacity-60";
+
   return (
-    <div className="flex flex-wrap gap-3">
-      <div className="flex items-center gap-3 border border-[#f5f5f4]/20 px-4 py-2">
-        <span className="text-xs uppercase tracking-[0.28em] text-[#f5f5f4]/65">Constant Monitoring</span>
-        <button
-          onClick={() => runRequest(`/api/projects/${projectId}/toggle-monitoring`)}
-          disabled={isPending}
-          className={`rounded-full border px-3 py-1 text-[10px] uppercase tracking-[0.28em] ${
-            monitoringActive
-              ? "border-[#f5f5f4]/70 bg-[#f5f5f4]/12"
-              : "border-[#f5f5f4]/20 bg-transparent"
-          }`}
-        >
-          {monitoringActive ? "On" : "Off"}
-        </button>
-      </div>
+    <div className="flex flex-wrap items-center gap-2">
+      {/* Monitoring toggle as a labeled switch */}
       <button
-        onClick={() => runQa("PRODUCTION")}
-        disabled={isRunningQa}
-        className="ui-button"
+        type="button"
+        onClick={() => runRequest(`/api/projects/${projectId}/toggle-monitoring`)}
+        disabled={isPending}
+        className="inline-flex h-9 items-center gap-2 rounded-[8px] border border-line bg-surface px-3 text-[13px] font-medium text-ink-2 hover:bg-hover"
+        title={monitoringActive ? "Click to pause monitoring" : "Click to enable monitoring"}
       >
-        {isRunningQa ? "QA Running..." : "Run Prod QA"}
+        <span
+          className={`h-2 w-2 rounded-full ${monitoringActive ? "bg-success" : "bg-ink-3"}`}
+        />
+        Monitoring {monitoringActive ? "on" : "off"}
       </button>
+
+      <button onClick={() => runQa("PRODUCTION")} disabled={isRunningQa} className={primaryClasses}>
+        <Play className="h-4 w-4" />
+        {isRunningQa ? "Running…" : "Run prod QA"}
+      </button>
+
       {hasStaging ? (
         <button
           onClick={() => runQa("STAGING")}
           disabled={isRunningQa}
-          className="ui-button"
+          className={secondaryClasses}
         >
-          {isRunningQa ? "QA Running..." : "Run Stage QA"}
+          <Play className="h-4 w-4" />
+          Run stage QA
         </button>
       ) : null}
+
       <button
         onClick={() => runRequest(`/api/projects/${projectId}/duplicate`)}
         disabled={isPending}
-        className="ui-button"
+        className={secondaryClasses}
       >
+        <Copy className="h-4 w-4" />
         Duplicate
       </button>
-      <Link
-        href={`/projects/${projectId}/edit`}
-        className="ui-button"
-      >
+
+      <Link href={`/projects/${projectId}/edit`} className={secondaryClasses}>
+        <Pencil className="h-4 w-4" />
         Edit
       </Link>
+
       <button
-        onClick={() => runRequest(`/api/projects/${projectId}`, "DELETE")}
+        onClick={() => {
+          if (typeof window !== "undefined" && !window.confirm("Delete this project?")) return;
+          runRequest(`/api/projects/${projectId}`, "DELETE");
+        }}
         disabled={isPending}
-        className="ui-button"
+        className={dangerClasses}
       >
+        <Trash2 className="h-4 w-4" />
         Delete
       </button>
     </div>

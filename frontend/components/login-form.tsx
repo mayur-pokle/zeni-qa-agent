@@ -20,9 +20,6 @@ export function LoginForm() {
           "content-type": "application/json"
         },
         body: JSON.stringify({
-          // Server accepts either `email` or the legacy `username` key.
-          // We send under a non-standard form-field name (see below) and
-          // map it back here.
           email: String(formData.get("flowtest_email") ?? ""),
           password: String(formData.get("flowtest_password") ?? ""),
           rememberMe: formData.get("rememberMe") === "on"
@@ -41,20 +38,8 @@ export function LoginForm() {
   }
 
   return (
-    // autoComplete="off" on the form + non-standard input names tell the
-    // browser not to offer saved-username/password suggestions on this
-    // page. Chrome respects this for fields that don't match its
-    // username/password heuristics — hence `flowtest_email` instead of
-    // `email`. data-1p-ignore / data-lpignore are honoured by 1Password
-    // and LastPass.
-    <form
-      action={handleSubmit}
-      autoComplete="off"
-      className="grid gap-5 border border-[#f5f5f4]/20 p-6"
-    >
-      {/* Honeypot to absorb any aggressive autofill that ignores
-          autoComplete="off" — Chrome occasionally fills the first
-          email-shaped input regardless. */}
+    <form action={handleSubmit} autoComplete="off" className="grid gap-4">
+      {/* Honeypots — see explanatory note in earlier version. */}
       <input
         type="text"
         name="username"
@@ -72,8 +57,8 @@ export function LoginForm() {
         aria-hidden="true"
       />
 
-      <div className="grid gap-2">
-        <label className="text-xs uppercase tracking-[0.3em] text-[#f5f5f4]/60">Email</label>
+      <label className="grid gap-1.5">
+        <span className="text-[13px] font-medium text-ink-2">Email</span>
         <input
           name="flowtest_email"
           type="email"
@@ -82,38 +67,53 @@ export function LoginForm() {
           placeholder="you@zeni.ai"
           data-1p-ignore="true"
           data-lpignore="true"
-          className="border border-[#f5f5f4]/20 bg-transparent px-4 py-3 text-sm outline-none"
+          className="h-10 w-full rounded-[8px] border border-line bg-surface px-3 text-[14px] text-ink placeholder:text-ink-3 outline-none transition-colors focus:border-brand focus:ring-2 focus:ring-brand/15"
         />
-      </div>
-      <div className="grid gap-2">
-        <label className="text-xs uppercase tracking-[0.3em] text-[#f5f5f4]/60">Password</label>
-        <div className="relative flex items-center">
+      </label>
+
+      <label className="grid gap-1.5">
+        <span className="text-[13px] font-medium text-ink-2">Password</span>
+        <div className="relative">
           <input
             name="flowtest_password"
             type={showPassword ? "text" : "password"}
             autoComplete="new-password"
             data-1p-ignore="true"
             data-lpignore="true"
-            className="flex-1 border border-[#f5f5f4]/20 bg-transparent px-4 py-3 pr-12 text-sm outline-none"
+            className="h-10 w-full rounded-[8px] border border-line bg-surface px-3 pr-12 text-[14px] text-ink placeholder:text-ink-3 outline-none transition-colors focus:border-brand focus:ring-2 focus:ring-brand/15"
           />
           <button
             type="button"
             onClick={() => setShowPassword((v) => !v)}
             aria-label={showPassword ? "Hide password" : "Show password"}
             title={showPassword ? "Hide password" : "Show password"}
-            className="absolute right-2 inline-flex h-9 w-9 items-center justify-center text-[#f5f5f4]/65 transition hover:text-[#f5f5f4]"
+            className="absolute right-1 top-1 inline-flex h-8 w-8 items-center justify-center rounded-[6px] text-ink-3 transition-colors hover:bg-hover hover:text-ink"
           >
             {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </button>
         </div>
-      </div>
-      <label className="flex items-center gap-3 text-xs uppercase tracking-[0.28em] text-[#f5f5f4]/70">
-        <input type="checkbox" name="rememberMe" defaultChecked className="h-4 w-4 accent-[#f5f5f4]" />
+      </label>
+
+      <label className="flex items-center gap-2 text-[13px] text-ink-2">
+        <input
+          type="checkbox"
+          name="rememberMe"
+          defaultChecked
+          className="h-4 w-4 rounded accent-[#0B2F2A]"
+        />
         Remember me for 30 days
       </label>
-      {error ? <p className="text-sm text-[#f5f5f4]/80">{error}</p> : null}
-      <button type="submit" disabled={isPending} className="ui-button">
-        {isPending ? "Signing In..." : "Enter Control Room"}
+
+      {error ? (
+        <p className="rounded-[8px] bg-tag-pink px-3 py-2 text-[13px] text-error">{error}</p>
+      ) : null}
+
+      <button
+        type="submit"
+        disabled={isPending}
+        className="inline-flex h-10 items-center justify-center gap-2 rounded-[8px] bg-brand px-4 text-[14px] font-medium text-ink-inverse transition-colors hover:bg-[#0E3D37] active:bg-[#072420] disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        {isPending ? "Signing in…" : "Sign in"}
       </button>
     </form>
   );
