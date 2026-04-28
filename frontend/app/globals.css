@@ -1,7 +1,94 @@
 @import url("https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=Roboto:wght@400;500;700&display=swap");
 @import "tailwindcss";
 
+/*
+ * Design tokens for the Phase 2+ light redesign.
+ *
+ * These are registered through Tailwind v4's @theme block so they can be
+ * used as utility classes (e.g. `bg-canvas`, `text-ink`, `border-line`,
+ * `bg-tag-green`). They live alongside — and intentionally don't
+ * replace — the legacy dark-theme `--background` / `--foreground`
+ * variables below, which keeps every existing page rendering as before
+ * until that page is ported over.
+ *
+ * Mapping back to the design brief:
+ *   bg-primary    → bg-canvas        (page background)
+ *   bg-secondary  → bg-surface       (card background)
+ *   bg-tertiary   → bg-surface-2
+ *   bg-hover      → bg-hover
+ *   text-primary  → text-ink
+ *   text-secondary → text-ink-2
+ *   text-muted    → text-ink-3
+ *   text-inverse  → text-ink-inverse
+ *   border-default → border-line
+ *   border-subtle  → border-line-2
+ *   icon-default  → text-icon
+ *   icon-bg       → bg-icon-bg
+ *   accent-primary → bg-brand / text-brand
+ *   accent-blue   → bg-brand-blue
+ *   accent-orange → bg-brand-orange
+ *   success/error/warning/info/purple → same names
+ *   tag-*         → bg-tag-*
+ *   chart-*       → text-chart-*
+ */
+@theme inline {
+  /* Surfaces */
+  --color-canvas: #F7F9FB;
+  --color-surface: #FFFFFF;
+  --color-surface-2: #F5F7FA;
+  --color-sidebar: #FFFFFF;
+  --color-hover: #F1F5F9;
+
+  /* Text */
+  --color-ink: #0F172A;
+  --color-ink-2: #475569;
+  --color-ink-3: #94A3B8;
+  --color-ink-inverse: #FFFFFF;
+
+  /* Borders & icons */
+  --color-line: #E5E7EB;
+  --color-line-2: #EEF2F7;
+  --color-icon: #64748B;
+  --color-icon-bg: #F1F5F9;
+
+  /* Brand */
+  --color-brand: #0B2F2A;
+  --color-brand-blue: #3B82F6;
+  --color-brand-orange: #F97316;
+
+  /* Status */
+  --color-success: #22C55E;
+  --color-warning: #F59E0B;
+  --color-error: #EF4444;
+  --color-info: #3B82F6;
+  --color-purple: #7C3AED;
+
+  /* Tags / soft chips */
+  --color-tag-orange: #FDEAD7;
+  --color-tag-blue: #E0F2FE;
+  --color-tag-pink: #FCE7F3;
+  --color-tag-green: #DCFCE7;
+
+  /* Charts */
+  --color-chart-blue: #3B82F6;
+  --color-chart-orange: #F59E0B;
+  --color-chart-grid: #E5E7EB;
+
+  /* Radius */
+  --radius-card: 12px;
+  --radius-button: 8px;
+  --radius-pill: 999px;
+
+  /* Shadows — cards lift via shadow, not borders */
+  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.08);
+  --shadow-card-hover: 0 1px 3px rgba(15, 23, 42, 0.06), 0 4px 12px rgba(15, 23, 42, 0.08);
+  --shadow-popover: 0 8px 24px rgba(15, 23, 42, 0.12);
+}
+
 :root {
+  /* Legacy dark-theme variables — still drive html/body background and
+   * existing components. Phase 3 will retire these once every page has
+   * moved to the token system above. */
   --background: #292524;
   --foreground: #f5f5f4;
 }
