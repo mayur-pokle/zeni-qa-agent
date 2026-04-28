@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { allowedLoginEmails, env } from "@/lib/env";
+import { loginCredentials } from "@/lib/env";
 import { getSessionCookie } from "@/lib/session";
 
 export async function POST(request: NextRequest) {
@@ -11,10 +11,8 @@ export async function POST(request: NextRequest) {
   const submittedEmail = String(body.email ?? body.username ?? "").trim().toLowerCase();
   const submittedPassword = String(body.password ?? "");
 
-  if (
-    !allowedLoginEmails.includes(submittedEmail) ||
-    submittedPassword !== env.AUTH_PASSWORD
-  ) {
+  const expectedPassword = loginCredentials[submittedEmail];
+  if (!expectedPassword || submittedPassword !== expectedPassword) {
     return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
   }
 

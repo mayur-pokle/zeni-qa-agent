@@ -167,6 +167,27 @@ export async function testHubspotForm(
   }
 
   try {
+    // Preferred path: submit directly to HubSpot's Forms API. We extract
+    // the embed's portalId + formGuid and POST a JSON body — no click,
+    // no cookie banner, no headless-browser bot detection. This is what
+    // HubSpot's own server-to-server integrations use, so it's far more
+    // reliable than driving the embed UI.
+    const coords = await extractFormCoordinates(page, handle);
+    if (coords) {
+      const apiResult = await submitViaHubspotApi(coords, page);
+      return {
+        found: true,
+        embedKind: handle.kind,
+        visible: true,
+        attempted: apiResult.attempted,
+        succeeded: apiResult.succeeded,
+        detail: apiResult.detail
+      };
+    }
+
+    // Fallback (rare): we couldn't read the form's portalId/formGuid.
+    // Drive the embed UI by clicking submit and watching for HubSpot's
+    // submit endpoint network response.
     const fillResult = await fillHubspotForm(handle);
     if (fillResult.missingRequired.length > 0) {
       return {
@@ -180,12 +201,6 @@ export async function testHubspotForm(
       };
     }
 
-    // Set up a listener for HubSpot's submission endpoint BEFORE we
-    // click submit. This is the source of truth for whether the form
-    // actually POSTed: a click that fires but never produces a network
-    // request means client-side validation silently killed the
-    // submission. waitForResponse listens across all frames in the page,
-    // so it catches iframe-embed forms too.
     const HUBSPOT_SUBMIT_URL_RE =
       /forms[^/]*\.hsforms\.(com|net)\/(?:submissions|uploads)\/v3\/(?:integration\/)?(?:submit|upload)/;
     const submissionResponsePromise = page
@@ -200,8 +215,6 @@ export async function testHubspotForm(
     if (submissionResponse) {
       const status = submissionResponse.status();
       const ok = submissionResponse.ok();
-      // Best-effort body capture for non-2xx responses so the report
-      // includes HubSpot's actual rejection reason.
       let bodyHint = "";
       if (!ok) {
         const bodyText = await submissionResponse.text().catch(() => "");
@@ -214,21 +227,14 @@ export async function testHubspotForm(
         attempted: true,
         succeeded: ok,
         detail: ok
-          ? `HubSpot accepted submission (HTTP ${status}); ${fillResult.filledFields.length} field(s) filled`
+          ? `HubSpot accepted submission via embed (HTTP ${status}); ${fillResult.filledFields.length} field(s) filled`
           : `HubSpot rejected submission with HTTP ${status}${bodyHint}`
       };
     }
 
-    // No network request fired within the verify window. The submit
-    // button click either didn't reach the form, or HubSpot's
-    // client-side validation blocked the POST. Pull any visible error
-    // messages from the form so the report explains why.
     const validationErrors = await collectFormErrors(handle);
     const fallbackDomSuccess = await verifySubmissionSuccess(handle);
     if (fallbackDomSuccess) {
-      // Edge case: success state appeared but our network listener
-      // missed the request (e.g., it fired before the listener was
-      // attached). Treat as success but flag the ambiguity.
       return {
         found: true,
         embedKind: handle.kind,
@@ -248,7 +254,7 @@ export async function testHubspotForm(
       detail:
         validationErrors.length > 0
           ? `Submit click did not POST to HubSpot. Form errors: ${validationErrors.slice(0, 3).join(" | ")}${validationErrors.length > 3 ? " | …" : ""}`
-          : "Submit click did not produce a network request to HubSpot within 15s — likely blocked by client-side validation, cookie consent banner, or anti-bot script"
+          : "Submit click did not produce a network request to HubSpot within 15s — and no portalId/formGuid found to retry via API. Embed may be misconfigured."
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
@@ -515,6 +521,154 @@ async function submitForm(handle: FormHandle) {
     .first();
   await fallback.scrollIntoViewIfNeeded().catch(() => undefined);
   await fallback.click();
+}
+
+type FormCoordinates = { portalId: string; formGuid: string };
+
+/**
+ * Pull the HubSpot portalId + formGuid out of the embed. Three places
+ * we look, in order of reliability:
+ *
+ *  1. iframe src URL query string (`?portalId=X&formId=Y`) — most
+ *     reliable for the modern v2 embed.
+ *  2. Inline form data attributes (`[data-portal-id]`, `[data-form-id]`)
+ *     — set by the legacy embed.
+ *  3. Page HTML regex against `hbspt.forms.create({...})` — handles
+ *     custom embeds that bootstrap the form via the script API.
+ */
+async function extractFormCoordinates(
+  page: Page,
+  handle: FormHandle
+): Promise<FormCoordinates | null> {
+  // 1. iframe src
+  if (handle.kind === "iframe") {
+    const src = await handle.iframeLocator.getAttribute("src").catch(() => null);
+    if (src) {
+      const fromUrl = parseCoordsFromUrl(src);
+      if (fromUrl) return fromUrl;
+    }
+  }
+
+  // 2. inline form data-* attributes
+  if (handle.kind === "inline") {
+    const portalId = await handle.root.getAttribute("data-portal-id").catch(() => null);
+    const formGuid =
+      (await handle.root.getAttribute("data-form-id").catch(() => null)) ??
+      (await handle.root.getAttribute("data-form-guid").catch(() => null));
+    if (portalId && formGuid) return { portalId, formGuid };
+  }
+
+  // 3. hbspt.forms.create({...}) in any script tag
+  const html = await page.content().catch(() => "");
+  const match = html.match(
+    /hbspt\.forms\.create\s*\(\s*\{[^}]*?portalId\s*:\s*['"]?(\d+)['"]?[\s\S]*?(?:formId|formGuid)\s*:\s*['"]([0-9a-f-]{36})['"]/i
+  );
+  if (match) return { portalId: match[1], formGuid: match[2] };
+
+  // Or the reverse field order
+  const reverseMatch = html.match(
+    /hbspt\.forms\.create\s*\(\s*\{[^}]*?(?:formId|formGuid)\s*:\s*['"]([0-9a-f-]{36})['"][\s\S]*?portalId\s*:\s*['"]?(\d+)['"]?/i
+  );
+  if (reverseMatch) return { portalId: reverseMatch[2], formGuid: reverseMatch[1] };
+
+  return null;
+}
+
+function parseCoordsFromUrl(rawUrl: string): FormCoordinates | null {
+  try {
+    const url = new URL(rawUrl);
+    const portalId = url.searchParams.get("portalId");
+    const formGuid =
+      url.searchParams.get("formId") ?? url.searchParams.get("formGuid");
+    if (portalId && formGuid && /^[0-9a-f-]{36}$/i.test(formGuid)) {
+      return { portalId, formGuid };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * POSTs our dummy data straight to HubSpot's public Forms API.
+ *
+ *   POST https://api.hsforms.com/submissions/v3/integration/submit/{portalId}/{formGuid}
+ *
+ * Unknown fields are silently ignored by HubSpot, so we just send the
+ * full HUBSPOT_FORM_DUMMY_DATA payload — the form will pick up whatever
+ * properties match. The response status is the source of truth: 200 =
+ * row in CRM, 400 = validation error (body explains which property),
+ * 404 = wrong portalId/formGuid.
+ *
+ * The hutk (HubSpot tracking cookie) is included if available so the
+ * submission attaches to a tracked visitor; absent hutk is fine — the
+ * v3 API treats it as optional.
+ */
+async function submitViaHubspotApi(
+  coords: FormCoordinates,
+  page: Page
+): Promise<{ attempted: boolean; succeeded: boolean; detail: string }> {
+  const fields = Object.entries(HUBSPOT_FORM_DUMMY_DATA).flatMap(([groupKey, value]) => {
+    const aliases = FIELD_ALIASES[groupKey] ?? [groupKey];
+    // Send under both the canonical key and every alias. HubSpot
+    // ignores names that don't exist on the form, so this just
+    // increases the odds we match the right property without us having
+    // to enumerate the form's actual field names first.
+    return aliases.map((name) => ({ name, value }));
+  });
+
+  // Best-effort: pluck the hubspotutk cookie from the browser context.
+  // Improves attribution but isn't required for the submission to land.
+  const hutk = await page
+    .context()
+    .cookies()
+    .then((cookies) => cookies.find((c) => c.name === "hubspotutk")?.value)
+    .catch(() => undefined);
+
+  const url = `https://api.hsforms.com/submissions/v3/integration/submit/${coords.portalId}/${coords.formGuid}`;
+  const body = {
+    submittedAt: Date.now(),
+    fields,
+    context: {
+      pageUri: page.url(),
+      pageName: await page.title().catch(() => ""),
+      ...(hutk ? { hutk } : {})
+    }
+  };
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 10_000);
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+      signal: controller.signal
+    });
+    const status = response.status;
+    if (response.ok) {
+      return {
+        attempted: true,
+        succeeded: true,
+        detail: `HubSpot Forms API accepted submission (HTTP ${status}, portal ${coords.portalId})`
+      };
+    }
+    const text = await response.text().catch(() => "");
+    return {
+      attempted: true,
+      succeeded: false,
+      detail: `HubSpot Forms API rejected submission (HTTP ${status}): ${text.slice(0, 240)}`
+    };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    return {
+      attempted: false,
+      succeeded: false,
+      detail: `HubSpot Forms API request failed: ${message.slice(0, 200)}`
+    };
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 /**
