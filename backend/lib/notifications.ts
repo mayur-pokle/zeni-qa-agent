@@ -126,7 +126,10 @@ export function buildQaAlert({ run, project, environment }: QaAlertInputs): QaAl
   // and returns all runs for that project as a CSV. We thread the project
   // id through to match.
   const csvDownloadUrl = `${base}/api/reports/${project.id}`;
-  const reportPageUrl = `${base}/projects/${project.id}`;
+  // Deep-link straight to this specific run's report — landing on the
+  // project page forces the recipient to click again to find the run
+  // their alert was about.
+  const reportPageUrl = `${base}/projects/${project.id}/runs/${run.id}`;
 
   // ---------- Email (HTML + plain text) ----------
   const emailText = [

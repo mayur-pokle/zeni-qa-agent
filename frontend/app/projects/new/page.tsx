@@ -2,13 +2,15 @@ import Link from "next/link";
 import { PageChrome } from "@/components/ui/page-chrome";
 import { Card, CardBody } from "@/components/ui/card";
 import { ProjectForm } from "@/components/project-form";
-import { requireAuthenticatedRoute } from "@/lib/session";
+import { getCurrentUserEmail, requireAuthenticatedRoute } from "@/lib/session";
 
 export default async function NewProjectPage() {
   await requireAuthenticatedRoute();
+  const userEmail = await getCurrentUserEmail();
 
   return (
     <PageChrome
+      userEmail={userEmail}
       breadcrumb={
         <span>
           <Link href="/" className="hover:text-ink">

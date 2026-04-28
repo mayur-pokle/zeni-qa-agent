@@ -26,7 +26,7 @@ import { FilterTabs, type FilterTab } from "@/components/ui/filter-tabs";
 import { Input, Select } from "@/components/ui/input";
 import { SlideOver } from "@/components/ui/slide-over";
 import { ProjectForm } from "@/components/project-form";
-import { formatDate } from "@/lib/utils";
+import { LocalTime } from "@/components/ui/local-time";
 import type { ProjectWithRelations } from "@/lib/types";
 
 type DashboardFilters = {
@@ -45,7 +45,13 @@ function buildQuery(filters: DashboardFilters) {
   return params.toString();
 }
 
-export function DashboardClient({ initialFilters }: { initialFilters: DashboardFilters }) {
+export function DashboardClient({
+  initialFilters,
+  userEmail
+}: {
+  initialFilters: DashboardFilters;
+  userEmail?: string | null;
+}) {
   const router = useRouter();
   const [projects, setProjects] = useState<ProjectWithRelations[]>([]);
   const [error, setError] = useState("");
@@ -119,6 +125,7 @@ export function DashboardClient({ initialFilters }: { initialFilters: DashboardF
     <PageChrome
       title="Dashboard"
       subtitle="Monitor every site you've registered. Healthy first, attention-needed second — fix what's broken."
+      userEmail={userEmail}
       actions={
         <Button variant="primary" onClick={() => setCreateOpen(true)}>
           <Plus className="h-4 w-4" />
@@ -266,7 +273,7 @@ export function DashboardClient({ initialFilters }: { initialFilters: DashboardF
                             {project.status[0] + project.status.slice(1).toLowerCase()}
                           </Pill>
                         </td>
-                        <td className="px-3 py-3 text-ink-2 tabular-nums">{formatDate(project.lastRunAt)}</td>
+                        <td className="px-3 py-3 text-ink-2 tabular-nums"><LocalTime value={project.lastRunAt} /></td>
                         <td className="px-3 py-3">
                           {latestUptime ? (
                             <span

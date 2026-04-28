@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { DashboardClient } from "@/components/dashboard-client";
 import { LoginForm } from "@/components/login-form";
-import { isAuthenticated } from "@/lib/session";
+import { getCurrentUserEmail, isAuthenticated } from "@/lib/session";
 
 export default async function DashboardPage({
   searchParams
@@ -60,5 +60,6 @@ export default async function DashboardPage({
         : "lastRun"
   };
 
-  return <DashboardClient initialFilters={initialFilters} />;
+  const userEmail = await getCurrentUserEmail();
+  return <DashboardClient initialFilters={initialFilters} userEmail={userEmail} />;
 }

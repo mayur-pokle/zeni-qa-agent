@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { loginCredentials } from "@/lib/env";
-import { getSessionCookie } from "@/lib/session";
+import { getSessionCookie, getUserCookie } from "@/lib/session";
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
@@ -16,7 +16,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
   }
 
+  const remember = Boolean(body.rememberMe);
   const response = NextResponse.json({ ok: true });
-  response.cookies.set(getSessionCookie(Boolean(body.rememberMe)));
+  response.cookies.set(getSessionCookie(remember));
+  response.cookies.set(getUserCookie(submittedEmail, remember));
   return response;
 }

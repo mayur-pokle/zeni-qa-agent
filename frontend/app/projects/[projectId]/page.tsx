@@ -21,8 +21,8 @@ import { Tabs } from "@/components/ui/tabs";
 import { ProjectActions } from "@/components/project-actions";
 import { QaProcessCard } from "@/components/qa-process-card";
 import { getProjectForApp } from "@/lib/app-data";
-import { formatDate } from "@/lib/utils";
-import { requireAuthenticatedRoute } from "@/lib/session";
+import { LocalTime } from "@/components/ui/local-time";
+import { getCurrentUserEmail, requireAuthenticatedRoute } from "@/lib/session";
 
 export default async function ProjectDetailPage({
   params
@@ -31,7 +31,10 @@ export default async function ProjectDetailPage({
 }) {
   const { projectId } = await params;
   await requireAuthenticatedRoute();
-  const project = await getProjectForApp(projectId);
+  const [project, userEmail] = await Promise.all([
+    getProjectForApp(projectId),
+    getCurrentUserEmail()
+  ]);
 
   if (!project) {
     notFound();
@@ -43,6 +46,7 @@ export default async function ProjectDetailPage({
 
   return (
     <PageChrome
+      userEmail={userEmail}
       breadcrumb={
         <span>
           <Link href="/" className="hover:text-ink">
@@ -110,7 +114,11 @@ export default async function ProjectDetailPage({
                   ? "warning"
                   : "neutral"
           }
-          helper={`Last run ${formatDate(project.lastRunAt)}`}
+          helper={
+            <span>
+              Last run <LocalTime value={project.lastRunAt} />
+            </span>
+          }
           icon={<Activity className="h-4 w-4" />}
         />
         <StatTile
@@ -210,8 +218,8 @@ function OverviewTab({ project }: { project: Project }) {
                 }
               />
             ) : null}
-            <Field label="Created" value={formatDate(project.createdAt)} />
-            <Field label="Last run" value={formatDate(project.lastRunAt)} />
+            <Field label="Created" value={<LocalTime value={project.createdAt} />} />
+            <Field label="Last run" value={<LocalTime value={project.lastRunAt} />} />
             <Field
               label="Schedule"
               value={`Every ${project.monitoringIntervalMinutes} min · ${project.monitoringActive ? "active" : "paused"}`}
@@ -242,7 +250,7 @@ function OverviewTab({ project }: { project: Project }) {
                     <Pill tone={statusTone(run.status)}>{run.status}</Pill>
                     <span className="text-ink-2">{run.environment}</span>
                   </Link>
-                  <span className="text-ink-3">{formatDate(run.startedAt)}</span>
+                  <span className="text-ink-3"><LocalTime value={run.startedAt} /></span>
                 </li>
               ))}
             </ul>
@@ -350,7 +358,7 @@ function RunsTab({ project }: { project: Project }) {
                       </>
                     )}
                   </td>
-                  <td className="px-3 py-3 tabular-nums text-ink-2">{formatDate(run.startedAt)}</td>
+                  <td className="px-3 py-3 tabular-nums text-ink-2"><LocalTime value={run.startedAt} /></td>
                   <td className="px-3 py-3 text-right">
                     <Link
                       href={`/projects/${project.id}/runs/${run.id}`}

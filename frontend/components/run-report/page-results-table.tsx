@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import { Pill, statusTone } from "@/components/ui/pill";
 import { FilterTabs, type FilterTab } from "@/components/ui/filter-tabs";
-import { formatDate } from "@/lib/utils";
 import type { QaExecutionPayload } from "@/lib/types";
 
 type PageResult = QaExecutionPayload["pageResults"][number];

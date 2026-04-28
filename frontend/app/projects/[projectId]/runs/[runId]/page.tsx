@@ -8,8 +8,8 @@ import { Pill, statusTone } from "@/components/ui/pill";
 import { Button } from "@/components/ui/button";
 import { PageResultsTable } from "@/components/run-report/page-results-table";
 import { getQaRunForApp } from "@/lib/app-data";
-import { formatDate } from "@/lib/utils";
-import { requireAuthenticatedRoute } from "@/lib/session";
+import { LocalTime } from "@/components/ui/local-time";
+import { getCurrentUserEmail, requireAuthenticatedRoute } from "@/lib/session";
 import type { QaExecutionPayload } from "@/lib/types";
 
 function durationLabel(startedAt: string | Date, completedAt?: string | Date | null) {
@@ -31,7 +31,10 @@ export default async function QaRunDetailPage({
 }) {
   const { projectId, runId } = await params;
   await requireAuthenticatedRoute();
-  const run = await getQaRunForApp(runId);
+  const [run, userEmail] = await Promise.all([
+    getQaRunForApp(runId),
+    getCurrentUserEmail()
+  ]);
 
   if (!run || run.project.id !== projectId) {
     notFound();
@@ -76,6 +79,7 @@ export default async function QaRunDetailPage({
 
   return (
     <PageChrome
+      userEmail={userEmail}
       breadcrumb={
         <span>
           <Link href={`/projects/${run.project.id}`} className="hover:text-ink">
@@ -94,7 +98,7 @@ export default async function QaRunDetailPage({
       }
       subtitle={
         <span>
-          Started {formatDate(run.startedAt)} · Duration {durationLabel(run.startedAt, run.completedAt)} · {envUrl}
+          Started <LocalTime value={run.startedAt} /> · Duration {durationLabel(run.startedAt, run.completedAt)} · {envUrl}
         </span>
       }
       actions={

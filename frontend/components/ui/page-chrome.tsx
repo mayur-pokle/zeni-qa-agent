@@ -1,41 +1,42 @@
 import Link from "next/link";
 import Image from "next/image";
-import { LightLogoutButton } from "@/components/ui/light-logout-button";
+import { ProfileMenu } from "@/components/ui/profile-menu";
 
 /**
- * Light-mode page wrapper for redesigned pages. Mirrors what `Shell`
- * does for the dark legacy theme: full-bleed canvas background, top
- * bar with logo + nav, content slot, footer.
+ * Light-mode page wrapper. The Dashboard / Settings nav links moved
+ * into the profile dropdown so the top bar stays clean — just a
+ * clickable logo (back to dashboard) on the left and the avatar on
+ * the right.
  *
- * Phase 2 only redesigns the run report, so this chrome stays minimal.
- * Phase 3 will expand the top bar with a project switcher + nav tabs
- * (Dashboard / Projects / Settings). Until then, the chrome carries
- * just the logo, a back link to the parent project, and the user's
- * sign-out control.
- *
- * The component sets `bg-canvas` on its own root to override the dark
- * `--background` body color from globals.css. That way a redesigned
- * page can sit alongside dark legacy pages without leaking dark space
- * around the gutters.
+ * `userEmail` is passed in by each parent page (server-side via
+ * `getCurrentUserEmail()`) so the avatar's initials are personalised.
+ * Kept as a prop instead of read inline so this component can be used
+ * inside both server pages and client components like DashboardClient.
  */
 export function PageChrome({
   breadcrumb,
   title,
   subtitle,
   actions,
-  children
+  children,
+  userEmail
 }: {
   breadcrumb?: React.ReactNode;
   title: React.ReactNode;
   subtitle?: React.ReactNode;
   actions?: React.ReactNode;
   children: React.ReactNode;
+  userEmail?: string | null;
 }) {
   return (
     <div className="min-h-screen bg-canvas text-ink">
       <header className="border-b border-line-2 bg-surface">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-6 py-3">
-          <Link href="/" className="inline-flex items-center">
+          <Link
+            href="/"
+            className="inline-flex items-center rounded-[6px] outline-none focus:ring-2 focus:ring-brand/30"
+            aria-label="Flowtest dashboard"
+          >
             <Image
               src="/flowtest-logo.svg"
               alt="Flowtest"
@@ -45,21 +46,7 @@ export function PageChrome({
               priority
             />
           </Link>
-          <div className="flex items-center gap-2">
-            <Link
-              href="/"
-              className="inline-flex h-9 items-center px-3 text-sm font-medium text-ink-2 hover:text-ink"
-            >
-              Dashboard
-            </Link>
-            <Link
-              href="/settings"
-              className="inline-flex h-9 items-center px-3 text-sm font-medium text-ink-2 hover:text-ink"
-            >
-              Settings
-            </Link>
-            <LightLogoutButton />
-          </div>
+          {userEmail ? <ProfileMenu email={userEmail} /> : null}
         </div>
       </header>
 

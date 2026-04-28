@@ -4,7 +4,7 @@ import { ProjectForm } from "@/components/project-form";
 import { PageChrome } from "@/components/ui/page-chrome";
 import { Card, CardBody } from "@/components/ui/card";
 import { getProjectForApp } from "@/lib/app-data";
-import { requireAuthenticatedRoute } from "@/lib/session";
+import { getCurrentUserEmail, requireAuthenticatedRoute } from "@/lib/session";
 
 export default async function EditProjectPage({
   params
@@ -13,7 +13,10 @@ export default async function EditProjectPage({
 }) {
   const { projectId } = await params;
   await requireAuthenticatedRoute();
-  const project = await getProjectForApp(projectId);
+  const [project, userEmail] = await Promise.all([
+    getProjectForApp(projectId),
+    getCurrentUserEmail()
+  ]);
 
   if (!project) {
     notFound();
@@ -21,6 +24,7 @@ export default async function EditProjectPage({
 
   return (
     <PageChrome
+      userEmail={userEmail}
       breadcrumb={
         <span>
           <Link href="/" className="hover:text-ink">
