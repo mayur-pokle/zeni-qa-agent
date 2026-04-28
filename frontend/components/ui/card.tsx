@@ -41,12 +41,10 @@ export function CardHeader({
   className?: string;
 }) {
   return (
-    <div className={cn("flex items-start justify-between gap-4 px-5 pt-5", className)}>
+    <div className={cn("flex items-start justify-between gap-4 px-6 pt-6", className)}>
       <div>
-        <h3 className="text-[15px] font-medium text-ink">{title}</h3>
-        {subtitle ? (
-          <p className="mt-1 text-[13px] text-ink-2">{subtitle}</p>
-        ) : null}
+        <h3 className="text-base font-semibold text-ink">{title}</h3>
+        {subtitle ? <p className="mt-1 text-sm text-ink-2">{subtitle}</p> : null}
       </div>
       {actions ? <div className="shrink-0">{actions}</div> : null}
     </div>
@@ -64,5 +62,5 @@ export function CardBody({
   children: React.ReactNode;
   className?: string;
 }) {
-  return <div className={cn("px-5 py-5", className)}>{children}</div>;
+  return <div className={cn("px-6 py-6", className)}>{children}</div>;
 }

@@ -19,7 +19,7 @@ export function LightLogoutButton() {
         router.push("/");
         router.refresh();
       }}
-      className="inline-flex h-9 items-center rounded-[8px] border border-line bg-surface px-3 text-[13px] font-medium text-ink hover:bg-hover"
+      className="inline-flex h-9 items-center rounded-[8px] border border-line bg-surface px-3 text-sm font-medium text-ink hover:bg-hover"
     >
       Log out
     </button>

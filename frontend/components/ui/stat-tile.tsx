@@ -32,17 +32,22 @@ export function StatTile({
   icon?: React.ReactNode;
 }) {
   return (
-    <Card className="px-5 py-4">
-      <div className="flex items-start justify-between gap-3">
+    <Card className="px-6 py-6">
+      <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-[12px] font-medium text-ink-2">{label}</p>
-          <p className={cn("mt-2 text-[28px] font-semibold leading-none", TONE_NUMBER_COLOR[tone])}>
+          <p className="text-sm font-medium text-ink-2">{label}</p>
+          <p
+            className={cn(
+              "mt-3 text-3xl font-semibold leading-none tabular-nums",
+              TONE_NUMBER_COLOR[tone]
+            )}
+          >
             {value}
           </p>
-          {helper ? <p className="mt-2 text-[12px] text-ink-3">{helper}</p> : null}
+          {helper ? <p className="mt-3 text-xs text-ink-3">{helper}</p> : null}
         </div>
         {icon ? (
-          <div className="grid h-9 w-9 place-items-center rounded-[8px] bg-icon-bg text-icon">
+          <div className="grid h-8 w-8 place-items-center rounded-[8px] bg-icon-bg text-icon">
             {icon}
           </div>
         ) : null}

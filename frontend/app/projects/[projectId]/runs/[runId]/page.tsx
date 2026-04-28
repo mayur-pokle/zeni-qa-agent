@@ -39,9 +39,6 @@ export default async function QaRunDetailPage({
 
   const payload = (run.payload ?? {}) as Partial<QaExecutionPayload>;
   const pageResults = payload.pageResults ?? [];
-  const modules = payload.modules ?? [];
-  const consoleErrors = payload.consoleErrors ?? [];
-  const summary = payload.summary;
   const sitemap = payload.sitemap;
   const lighthouse = payload.lighthouse;
 
@@ -149,7 +146,7 @@ export default async function QaRunDetailPage({
       <section className="mt-4">
         <Card>
           <CardBody className="space-y-3">
-            <div className="flex items-center justify-between text-[13px] text-ink-2">
+            <div className="flex items-center justify-between text-sm text-ink-2">
               <span>Page health</span>
               <span>
                 {passedPages} passed · {warnedPages} warning · {failedPages} failed
@@ -201,7 +198,7 @@ export default async function QaRunDetailPage({
           <CardHeader title="HubSpot Forms" />
           <CardBody>
             {hubspotPagesFound === 0 ? (
-              <p className="text-[13px] text-ink-3">
+              <p className="text-sm text-ink-3">
                 No HubSpot embed forms detected on tested pages.
               </p>
             ) : (
@@ -225,7 +222,7 @@ export default async function QaRunDetailPage({
               </div>
             )}
             {pageResults.some((p) => p.hubspotForm?.found) ? (
-              <details className="mt-4 border-t border-line-2 pt-3 text-[13px]">
+              <details className="mt-4 border-t border-line-2 pt-3 text-sm">
                 <summary className="cursor-pointer text-ink-2 hover:text-ink">
                   Per-page detail
                 </summary>
@@ -273,79 +270,6 @@ export default async function QaRunDetailPage({
         </Card>
       </section>
 
-      {/* Cross-browser modules + Console errors side by side */}
-      <section className="mt-6 grid gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader title={`Cross-browser modules (${modules.length})`} />
-          <CardBody>
-            {modules.length === 0 ? (
-              <p className="text-[13px] text-ink-3">
-                No cross-browser modules ran for this QA cycle.
-              </p>
-            ) : (
-              <ul className="space-y-2 text-[13px]">
-                {modules.map((module, index) => (
-                  <li
-                    key={`${module.name}-${index}`}
-                    className="flex items-start justify-between gap-3 rounded-[8px] bg-surface-2 p-3"
-                  >
-                    <div className="min-w-0">
-                      <div className="font-medium text-ink">{module.name}</div>
-                      {module.details.length > 0 ? (
-                        <ul className="mt-1 list-disc space-y-0.5 pl-4 text-ink-2">
-                          {module.details.map((detail, i) => (
-                            <li key={i}>{detail}</li>
-                          ))}
-                        </ul>
-                      ) : null}
-                    </div>
-                    <Pill tone={statusTone(module.status)}>{module.status}</Pill>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CardBody>
-        </Card>
-
-        <Card>
-          <CardHeader title={`Console errors (${consoleErrors.length})`} />
-          <CardBody>
-            {consoleErrors.length === 0 ? (
-              <p className="text-[13px] text-ink-3">
-                No browser console errors captured during this run.
-              </p>
-            ) : (
-              <ul className="space-y-2">
-                {consoleErrors.map((line, index) => (
-                  <li
-                    key={index}
-                    className="rounded-[8px] bg-surface-2 p-3 font-mono text-[12px] leading-relaxed text-ink-2"
-                  >
-                    {line}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CardBody>
-        </Card>
-      </section>
-
-      {/* Raw payload — last resort, collapsed by default. */}
-      <section className="mt-6">
-        <Card>
-          <CardHeader title="Raw payload" />
-          <CardBody>
-            <details>
-              <summary className="cursor-pointer text-[13px] font-medium text-ink-2 hover:text-ink">
-                Show JSON
-              </summary>
-              <pre className="mt-3 max-h-[480px] overflow-auto rounded-[8px] bg-surface-2 p-3 font-mono text-[12px] leading-relaxed text-ink-2">
-                {JSON.stringify(run.payload, null, 2)}
-              </pre>
-            </details>
-          </CardBody>
-        </Card>
-      </section>
     </PageChrome>
   );
 }
@@ -369,22 +293,22 @@ function LighthouseTile({
           : "success";
   return (
     <div className="rounded-[8px] bg-surface-2 p-3">
-      <div className="text-[12px] font-medium text-ink-2">{label}</div>
+      <div className="text-xs font-medium text-ink-2">{label}</div>
       <div className="mt-1 flex items-baseline gap-2">
         <span
           className={
             tone === "error"
-              ? "text-[24px] font-semibold text-error"
+              ? "text-2xl font-semibold text-error"
               : tone === "warning"
-                ? "text-[24px] font-semibold text-warning"
+                ? "text-2xl font-semibold text-warning"
                 : tone === "success"
-                  ? "text-[24px] font-semibold text-success"
-                  : "text-[24px] font-semibold text-ink"
+                  ? "text-2xl font-semibold text-success"
+                  : "text-2xl font-semibold text-ink"
           }
         >
           {value ?? "—"}
         </span>
-        {value !== null ? <span className="text-[12px] text-ink-3">/ 100</span> : null}
+        {value !== null ? <span className="text-xs text-ink-3">/ 100</span> : null}
       </div>
     </div>
   );
@@ -409,8 +333,8 @@ function MetricLine({
           : "text-ink";
   return (
     <div className="rounded-[8px] bg-surface-2 p-3">
-      <div className="text-[12px] font-medium text-ink-2">{label}</div>
-      <div className={`mt-1 text-[24px] font-semibold ${colorClass}`}>{value}</div>
+      <div className="text-xs font-medium text-ink-2">{label}</div>
+      <div className={`mt-1 text-2xl font-semibold ${colorClass}`}>{value}</div>
     </div>
   );
 }

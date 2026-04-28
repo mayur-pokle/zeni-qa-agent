@@ -83,9 +83,9 @@ export function QaProcessCard({ projectId }: { projectId: string }) {
     <section className="rounded-[12px] bg-surface p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_1px_3px_rgba(15,23,42,0.08)]">
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <h3 className="text-[15px] font-medium text-ink">QA process</h3>
+          <h3 className="text-base font-medium text-ink">QA process</h3>
           {isRunning ? (
-            <span className="inline-flex items-center gap-1.5 rounded-[6px] bg-tag-blue px-2 py-0.5 text-[12px] font-medium text-[#1D4ED8]">
+            <span className="inline-flex items-center gap-1.5 rounded-[6px] bg-tag-blue px-2 py-0.5 text-xs font-medium text-[#1D4ED8]">
               <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-info" />
               Running
             </span>
@@ -94,7 +94,7 @@ export function QaProcessCard({ projectId }: { projectId: string }) {
       </div>
 
       {!progress ? (
-        <div className="rounded-[8px] bg-surface-2 px-4 py-6 text-center text-[13px] text-ink-3">
+        <div className="rounded-[8px] bg-surface-2 px-4 py-6 text-center text-sm text-ink-3">
           No QA run in progress.
         </div>
       ) : (
@@ -105,7 +105,7 @@ export function QaProcessCard({ projectId }: { projectId: string }) {
               : "rounded-[8px] bg-surface-2 p-4"
           }
         >
-          <div className="flex items-center justify-between gap-3 text-[12px] text-ink-2">
+          <div className="flex items-center justify-between gap-3 text-xs text-ink-2">
             <span className="font-medium">{progress.phase}</span>
             <span className="tabular-nums">{progress.percent}%</span>
           </div>
@@ -117,7 +117,7 @@ export function QaProcessCard({ projectId }: { projectId: string }) {
               style={{ width: `${progress.percent}%` }}
             />
           </div>
-          <div className="mt-3 grid gap-1 text-[13px]">
+          <div className="mt-3 grid gap-1 text-sm">
             <div className="text-ink-2">
               Pages processed:{" "}
               <span className="font-medium text-ink">
@@ -125,11 +125,11 @@ export function QaProcessCard({ projectId }: { projectId: string }) {
               </span>
             </div>
             {progress.currentUrl ? (
-              <div className="break-all text-[12px] text-ink-3">{progress.currentUrl}</div>
+              <div className="break-all text-xs text-ink-3">{progress.currentUrl}</div>
             ) : null}
           </div>
           {hasFailed && progress.error ? (
-            <div className="mt-3 rounded-[6px] bg-tag-pink px-3 py-2 text-[12px] leading-relaxed text-error">
+            <div className="mt-3 rounded-[6px] bg-tag-pink px-3 py-2 text-xs leading-relaxed text-error">
               {progress.error}
             </div>
           ) : null}

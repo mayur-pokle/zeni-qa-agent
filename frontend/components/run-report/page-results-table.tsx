@@ -49,14 +49,14 @@ export function PageResultsTable({ rows }: { rows: PageResult[] }) {
       <FilterTabs tabs={tabs} active={active} onChange={setActive} />
 
       {filtered.length === 0 ? (
-        <div className="px-5 py-12 text-center text-[13px] text-ink-3">
+        <div className="px-5 py-12 text-center text-sm text-ink-3">
           No pages with this status.
         </div>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1100px] border-collapse text-[13px]">
+          <table className="w-full min-w-[1100px] border-collapse text-sm">
             <thead>
-              <tr className="text-left text-[12px] font-medium text-ink-3">
+              <tr className="text-left text-xs font-medium text-ink-3">
                 <th className="px-5 py-3 font-medium">URL</th>
                 <th className="px-3 py-3 font-medium">Status</th>
                 <th className="px-3 py-3 font-medium">HTTP</th>
@@ -104,7 +104,7 @@ export function PageResultsTable({ rows }: { rows: PageResult[] }) {
                           <summary className="cursor-pointer text-error">
                             {broken.length} / {linksChecked}
                           </summary>
-                          <ul className="mt-2 list-disc space-y-1 pl-4 text-[12px] text-ink-2">
+                          <ul className="mt-2 list-disc space-y-1 pl-4 text-xs text-ink-2">
                             {broken.slice(0, 10).map((link, i) => (
                               <li key={i} className="break-all">
                                 <a href={link.url} target="_blank" rel="noreferrer" className="hover:underline">
@@ -139,7 +139,7 @@ export function PageResultsTable({ rows }: { rows: PageResult[] }) {
         </div>
       )}
 
-      <div className="border-t border-line-2 px-5 py-3 text-[12px] text-ink-3">
+      <div className="border-t border-line-2 px-5 py-3 text-xs text-ink-3">
         Showing {filtered.length} of {rows.length} pages.
         <span className="ml-2">
           Timestamps in your local timezone — page-level checked-at available in CSV.

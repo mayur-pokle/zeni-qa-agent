@@ -48,13 +48,13 @@ export function PageChrome({
           <div className="flex items-center gap-2">
             <Link
               href="/"
-              className="inline-flex h-9 items-center px-3 text-[13px] font-medium text-ink-2 hover:text-ink"
+              className="inline-flex h-9 items-center px-3 text-sm font-medium text-ink-2 hover:text-ink"
             >
               Dashboard
             </Link>
             <Link
               href="/settings"
-              className="inline-flex h-9 items-center px-3 text-[13px] font-medium text-ink-2 hover:text-ink"
+              className="inline-flex h-9 items-center px-3 text-sm font-medium text-ink-2 hover:text-ink"
             >
               Settings
             </Link>
@@ -67,11 +67,11 @@ export function PageChrome({
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div className="min-w-0">
             {breadcrumb ? (
-              <div className="mb-2 text-[12px] text-ink-3">{breadcrumb}</div>
+              <div className="mb-2 text-xs text-ink-3">{breadcrumb}</div>
             ) : null}
-            <h1 className="text-[22px] font-semibold leading-tight text-ink">{title}</h1>
+            <h1 className="text-2xl font-semibold leading-tight text-ink">{title}</h1>
             {subtitle ? (
-              <p className="mt-1 text-[13px] text-ink-2">{subtitle}</p>
+              <p className="mt-1 text-sm text-ink-2">{subtitle}</p>
             ) : null}
           </div>
           {actions ? <div className="flex flex-wrap gap-2">{actions}</div> : null}

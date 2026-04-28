@@ -50,13 +50,13 @@ export function ProjectActions({
   }
 
   const secondaryClasses =
-    "inline-flex h-9 items-center gap-2 rounded-[8px] border border-line bg-surface px-3 text-[13px] font-medium text-ink hover:bg-hover hover:border-ink-3 disabled:cursor-not-allowed disabled:opacity-60";
+    "inline-flex h-9 items-center gap-2 rounded-[8px] border border-line bg-surface px-3 text-sm font-medium text-ink hover:bg-hover hover:border-ink-3 disabled:cursor-not-allowed disabled:opacity-60";
 
   const primaryClasses =
-    "inline-flex h-9 items-center gap-2 rounded-[8px] bg-brand px-3 text-[13px] font-medium text-ink-inverse hover:bg-[#0E3D37] active:bg-[#072420] disabled:cursor-not-allowed disabled:opacity-60";
+    "inline-flex h-9 items-center gap-2 rounded-[8px] bg-brand px-3 text-sm font-medium !text-white hover:bg-[#0E3D37] active:bg-[#072420] disabled:cursor-not-allowed disabled:opacity-60";
 
   const dangerClasses =
-    "inline-flex h-9 items-center gap-2 rounded-[8px] border border-error/30 bg-tag-pink px-3 text-[13px] font-medium text-error hover:bg-tag-pink/80 disabled:cursor-not-allowed disabled:opacity-60";
+    "inline-flex h-9 items-center gap-2 rounded-[8px] border border-error/30 bg-tag-pink px-3 text-sm font-medium text-error hover:bg-tag-pink/80 disabled:cursor-not-allowed disabled:opacity-60";
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -65,7 +65,7 @@ export function ProjectActions({
         type="button"
         onClick={() => runRequest(`/api/projects/${projectId}/toggle-monitoring`)}
         disabled={isPending}
-        className="inline-flex h-9 items-center gap-2 rounded-[8px] border border-line bg-surface px-3 text-[13px] font-medium text-ink-2 hover:bg-hover"
+        className="inline-flex h-9 items-center gap-2 rounded-[8px] border border-line bg-surface px-3 text-sm font-medium text-ink-2 hover:bg-hover"
         title={monitoringActive ? "Click to pause monitoring" : "Click to enable monitoring"}
       >
         <span

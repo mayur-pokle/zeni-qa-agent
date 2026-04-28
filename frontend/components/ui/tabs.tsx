@@ -47,7 +47,7 @@ export function Tabs({
               aria-selected={isActive}
               onClick={() => setActive(tab.value)}
               className={cn(
-                "relative inline-flex items-center gap-2 px-4 py-3 text-[13px] font-medium transition-colors",
+                "relative inline-flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors",
                 isActive ? "text-ink" : "text-ink-2 hover:text-ink"
               )}
             >
@@ -55,7 +55,7 @@ export function Tabs({
               {typeof tab.count === "number" ? (
                 <span
                   className={cn(
-                    "rounded-[6px] px-1.5 py-0.5 text-[11px] font-medium",
+                    "rounded-[6px] px-1.5 py-0.5 text-xs font-medium",
                     isActive ? "bg-brand text-ink-inverse" : "bg-surface-2 text-ink-2"
                   )}
                 >

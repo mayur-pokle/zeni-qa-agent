@@ -58,7 +58,7 @@ export function LoginForm() {
       />
 
       <label className="grid gap-1.5">
-        <span className="text-[13px] font-medium text-ink-2">Email</span>
+        <span className="text-sm font-medium text-ink-2">Email</span>
         <input
           name="flowtest_email"
           type="email"
@@ -67,12 +67,12 @@ export function LoginForm() {
           placeholder="you@zeni.ai"
           data-1p-ignore="true"
           data-lpignore="true"
-          className="h-10 w-full rounded-[8px] border border-line bg-surface px-3 text-[14px] text-ink placeholder:text-ink-3 outline-none transition-colors focus:border-brand focus:ring-2 focus:ring-brand/15"
+          className="h-10 w-full rounded-[8px] border border-line bg-surface px-3 text-sm text-ink placeholder:text-ink-3 outline-none transition-colors focus:border-brand focus:ring-2 focus:ring-brand/15"
         />
       </label>
 
       <label className="grid gap-1.5">
-        <span className="text-[13px] font-medium text-ink-2">Password</span>
+        <span className="text-sm font-medium text-ink-2">Password</span>
         <div className="relative">
           <input
             name="flowtest_password"
@@ -80,7 +80,7 @@ export function LoginForm() {
             autoComplete="new-password"
             data-1p-ignore="true"
             data-lpignore="true"
-            className="h-10 w-full rounded-[8px] border border-line bg-surface px-3 pr-12 text-[14px] text-ink placeholder:text-ink-3 outline-none transition-colors focus:border-brand focus:ring-2 focus:ring-brand/15"
+            className="h-10 w-full rounded-[8px] border border-line bg-surface px-3 pr-12 text-sm text-ink placeholder:text-ink-3 outline-none transition-colors focus:border-brand focus:ring-2 focus:ring-brand/15"
           />
           <button
             type="button"
@@ -94,7 +94,7 @@ export function LoginForm() {
         </div>
       </label>
 
-      <label className="flex items-center gap-2 text-[13px] text-ink-2">
+      <label className="flex items-center gap-2 text-sm text-ink-2">
         <input
           type="checkbox"
           name="rememberMe"
@@ -105,13 +105,13 @@ export function LoginForm() {
       </label>
 
       {error ? (
-        <p className="rounded-[8px] bg-tag-pink px-3 py-2 text-[13px] text-error">{error}</p>
+        <p className="rounded-[8px] bg-tag-pink px-3 py-2 text-sm text-error">{error}</p>
       ) : null}
 
       <button
         type="submit"
         disabled={isPending}
-        className="inline-flex h-10 items-center justify-center gap-2 rounded-[8px] bg-brand px-4 text-[14px] font-medium text-ink-inverse transition-colors hover:bg-[#0E3D37] active:bg-[#072420] disabled:cursor-not-allowed disabled:opacity-60"
+        className="inline-flex h-10 items-center justify-center gap-2 rounded-[8px] bg-brand px-4 text-sm font-medium !text-white transition-colors hover:bg-[#0E3D37] active:bg-[#072420] disabled:cursor-not-allowed disabled:opacity-60"
       >
         {isPending ? "Signing in…" : "Sign in"}
       </button>

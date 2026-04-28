@@ -179,8 +179,8 @@ type Project = NonNullable<Awaited<ReturnType<typeof getProjectForApp>>>;
 function Field({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div>
-      <dt className="text-[12px] font-medium text-ink-3">{label}</dt>
-      <dd className="mt-1 text-[14px] text-ink">{value}</dd>
+      <dt className="text-xs font-medium text-ink-3">{label}</dt>
+      <dd className="mt-1 text-sm text-ink">{value}</dd>
     </div>
   );
 }
@@ -240,13 +240,13 @@ function OverviewTab({ project }: { project: Project }) {
         <CardHeader title="Recent activity" />
         <CardBody>
           {project.qaRuns.length === 0 ? (
-            <p className="text-[13px] text-ink-3">
+            <p className="text-sm text-ink-3">
               No QA runs yet. Hit “Run prod QA” above to start the first one.
             </p>
           ) : (
             <ul className="divide-y divide-line-2">
               {project.qaRuns.slice(0, 5).map((run) => (
-                <li key={run.id} className="flex items-center justify-between gap-3 py-2.5 text-[13px]">
+                <li key={run.id} className="flex items-center justify-between gap-3 py-2.5 text-sm">
                   <Link
                     href={`/projects/${project.id}/runs/${run.id}`}
                     className="flex items-center gap-3 hover:underline"
@@ -273,7 +273,7 @@ function OverviewTab({ project }: { project: Project }) {
           }
         />
         <CardBody>
-          <p className="text-[13px] text-ink-2">
+          <p className="text-sm text-ink-2">
             Full per-page CSV with HubSpot form status, broken-link details, layout shifts, Lighthouse
             scores, and timestamps for every run.
           </p>
@@ -288,7 +288,7 @@ function RunsTab({ project }: { project: Project }) {
     return (
       <Card>
         <CardBody>
-          <p className="text-[13px] text-ink-3">No QA runs have been recorded yet.</p>
+          <p className="text-sm text-ink-3">No QA runs have been recorded yet.</p>
         </CardBody>
       </Card>
     );
@@ -296,9 +296,9 @@ function RunsTab({ project }: { project: Project }) {
   return (
     <Card>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[820px] border-collapse text-[13px]">
+        <table className="w-full min-w-[820px] border-collapse text-sm">
           <thead>
-            <tr className="text-left text-[12px] font-medium text-ink-3">
+            <tr className="text-left text-xs font-medium text-ink-3">
               <th className="px-5 py-3 font-medium">Run</th>
               <th className="px-3 py-3 font-medium">Status</th>
               <th className="px-3 py-3 font-medium">Performance</th>
@@ -337,7 +337,7 @@ function RunsTab({ project }: { project: Project }) {
                     >
                       {run.environment}
                     </Link>
-                    <p className="mt-0.5 text-[12px] text-ink-3">{run.id.slice(0, 8)}…</p>
+                    <p className="mt-0.5 text-xs text-ink-3">{run.id.slice(0, 8)}…</p>
                   </td>
                   <td className="px-3 py-3">
                     <Pill tone={statusTone(run.status)}>{run.status}</Pill>
@@ -377,7 +377,7 @@ function LighthouseTab({ project }: { project: Project }) {
     return (
       <Card>
         <CardBody>
-          <p className="text-[13px] text-ink-3">No Lighthouse audits captured yet.</p>
+          <p className="text-sm text-ink-3">No Lighthouse audits captured yet.</p>
         </CardBody>
       </Card>
     );
@@ -398,7 +398,7 @@ function LighthouseTab({ project }: { project: Project }) {
                 <Pill tone={tone}>
                   {report.environment}
                 </Pill>
-                <span className="text-[12px] text-ink-3">
+                <span className="text-xs text-ink-3">
                   {formatDate(report.createdAt)}
                 </span>
               </div>
@@ -412,7 +412,7 @@ function LighthouseTab({ project }: { project: Project }) {
                 href={`/api/lighthouse-reports/${report.id}`}
                 target="_blank"
                 rel="noreferrer"
-                className="mt-3 inline-flex items-center gap-1 text-[13px] text-ink-2 hover:underline"
+                className="mt-3 inline-flex items-center gap-1 text-sm text-ink-2 hover:underline"
               >
                 View full report
                 <ExternalLink className="h-3 w-3" />
@@ -430,8 +430,8 @@ function ScoreCell({ label, value }: { label: string; value: number }) {
     value < 60 ? "text-error" : value < 80 ? "text-warning" : "text-success";
   return (
     <div className="rounded-[8px] bg-surface-2 py-2">
-      <div className={`text-[18px] font-semibold ${tone}`}>{value}</div>
-      <div className="text-[11px] text-ink-3">{label}</div>
+      <div className={`text-lg font-semibold ${tone}`}>{value}</div>
+      <div className="text-xs text-ink-3">{label}</div>
     </div>
   );
 }
@@ -441,7 +441,7 @@ function UptimeTab({ project }: { project: Project }) {
     return (
       <Card>
         <CardBody>
-          <p className="text-[13px] text-ink-3">No uptime checks recorded yet.</p>
+          <p className="text-sm text-ink-3">No uptime checks recorded yet.</p>
         </CardBody>
       </Card>
     );
@@ -449,9 +449,9 @@ function UptimeTab({ project }: { project: Project }) {
   return (
     <Card>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[640px] border-collapse text-[13px]">
+        <table className="w-full min-w-[640px] border-collapse text-sm">
           <thead>
-            <tr className="text-left text-[12px] font-medium text-ink-3">
+            <tr className="text-left text-xs font-medium text-ink-3">
               <th className="px-5 py-3 font-medium">Status</th>
               <th className="px-3 py-3 font-medium">Environment</th>
               <th className="px-3 py-3 font-medium">HTTP</th>
@@ -490,7 +490,7 @@ function ErrorsTab({ project }: { project: Project }) {
     return (
       <Card>
         <CardBody>
-          <p className="text-[13px] text-ink-3">No error logs captured for this project yet.</p>
+          <p className="text-sm text-ink-3">No error logs captured for this project yet.</p>
         </CardBody>
       </Card>
     );
@@ -504,9 +504,9 @@ function ErrorsTab({ project }: { project: Project }) {
               <Pill tone={log.severity.toLowerCase() === "error" ? "error" : "warning"}>
                 {log.environment} · {log.severity}
               </Pill>
-              <span className="text-[12px] text-ink-3">{formatDate(log.createdAt)}</span>
+              <span className="text-xs text-ink-3">{formatDate(log.createdAt)}</span>
             </div>
-            <p className="text-[13px] leading-relaxed text-ink">{log.message}</p>
+            <p className="text-sm leading-relaxed text-ink">{log.message}</p>
           </CardBody>
         </Card>
       ))}

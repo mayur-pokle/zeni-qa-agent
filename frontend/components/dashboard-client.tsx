@@ -139,7 +139,7 @@ export function DashboardClient({ initialFilters }: { initialFilters: DashboardF
       </section>
 
       {error ? (
-        <div className="mt-6 rounded-[8px] bg-tag-pink px-4 py-3 text-[13px] text-error">
+        <div className="mt-6 rounded-[8px] bg-tag-pink px-4 py-3 text-sm text-error">
           Backend connection issue: {error}
         </div>
       ) : null}
@@ -186,9 +186,9 @@ export function DashboardClient({ initialFilters }: { initialFilters: DashboardF
             <EmptyProjects isPending={isPending} hasAnyProject={projects.length > 0} />
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[820px] border-collapse text-[13px]">
+              <table className="w-full min-w-[820px] border-collapse text-sm">
                 <thead>
-                  <tr className="text-left text-[12px] font-medium text-ink-3">
+                  <tr className="text-left text-xs font-medium text-ink-3">
                     <th className="px-5 py-3 font-medium">Project</th>
                     <th className="px-3 py-3 font-medium">Status</th>
                     <th className="px-3 py-3 font-medium">Last tested</th>
@@ -213,7 +213,7 @@ export function DashboardClient({ initialFilters }: { initialFilters: DashboardF
                           >
                             {project.name}
                           </Link>
-                          <p className="mt-0.5 text-[12px] text-ink-3">
+                          <p className="mt-0.5 text-xs text-ink-3">
                             {project.productionUrl}
                           </p>
                         </td>
@@ -274,12 +274,12 @@ function EmptyProjects({
 }) {
   if (isPending) {
     return (
-      <div className="px-5 py-12 text-center text-[13px] text-ink-3">Loading…</div>
+      <div className="px-5 py-12 text-center text-sm text-ink-3">Loading…</div>
     );
   }
   if (hasAnyProject) {
     return (
-      <div className="px-5 py-12 text-center text-[13px] text-ink-3">
+      <div className="px-5 py-12 text-center text-sm text-ink-3">
         No projects match this filter.
       </div>
     );
@@ -290,8 +290,8 @@ function EmptyProjects({
         <FolderOpen className="h-5 w-5" />
       </div>
       <div>
-        <p className="text-[15px] font-medium text-ink">No projects yet</p>
-        <p className="mt-1 text-[13px] text-ink-2">
+        <p className="text-base font-medium text-ink">No projects yet</p>
+        <p className="mt-1 text-sm text-ink-2">
           Add your first site to start uptime checks, sitemap QA, and performance tracking.
         </p>
       </div>
