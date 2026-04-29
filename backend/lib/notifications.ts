@@ -44,11 +44,24 @@ function appBaseUrl() {
   return (env.APP_URL ?? "").replace(/\/+$/, "");
 }
 
+// Hardcoded production Vercel URL used as the fallback when neither
+// FRONTEND_URL nor a non-localhost APP_URL is configured. Set
+// FRONTEND_URL on Railway to override this without a code change (e.g.
+// when the Vercel preview URL changes for a feature branch).
+const PRODUCTION_FRONTEND_URL = "https://zeni-qa-agent-frontend.vercel.app";
+
 function frontendBaseUrl() {
-  // Public URL the user clicks. Falls back to APP_URL so local dev
-  // (where backend and frontend share localhost:3000) keeps working
-  // without setting an extra env var.
-  return ((env.FRONTEND_URL ?? env.APP_URL) ?? "").replace(/\/+$/, "");
+  // 1. Explicit override wins.
+  if (env.FRONTEND_URL) return env.FRONTEND_URL.replace(/\/+$/, "");
+
+  const app = (env.APP_URL ?? "").replace(/\/+$/, "");
+  // 2. Local dev shares host with the backend — prefer APP_URL.
+  if (/localhost|127\.0\.0\.1/.test(app)) return app;
+
+  // 3. Production: APP_URL is the Railway backend URL, which is the
+  // wrong target for user clicks. Fall back to the known Vercel
+  // deployment.
+  return PRODUCTION_FRONTEND_URL;
 }
 
 /**
