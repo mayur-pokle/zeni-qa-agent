@@ -5,18 +5,18 @@ import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   Plus,
-  Search,
+  MagnifyingGlass,
   FolderOpen,
-  CheckCircle2,
-  AlertTriangle,
-  AlertOctagon,
+  CheckCircle,
+  Warning,
+  WarningOctagon,
   Eye,
-  Pencil,
-  Activity,
+  PencilSimple,
+  Pulse,
   Calendar,
   Globe,
   Gauge
-} from "lucide-react";
+} from "@phosphor-icons/react";
 import { PageChrome } from "@/components/ui/page-chrome";
 import { Card, CardHeader } from "@/components/ui/card";
 import { StatTile } from "@/components/ui/stat-tile";
@@ -161,21 +161,21 @@ export function DashboardClient({
           value={counts.healthy}
           tone={counts.healthy > 0 ? "success" : "neutral"}
           helper="No critical issues detected"
-          icon={<CheckCircle2 className="h-4 w-4" />}
+          icon={<CheckCircle className="h-4 w-4" />}
         />
         <StatTile
           label="Needs attention"
           value={counts.needsAttention}
           tone={counts.needsAttention > 0 ? "warning" : "neutral"}
           helper={counts.needsAttention > 0 ? "Warnings or new failures" : "Nothing flagged"}
-          icon={<AlertTriangle className="h-4 w-4" />}
+          icon={<Warning className="h-4 w-4" />}
         />
         <StatTile
           label="Down"
           value={counts.down}
           tone={counts.down > 0 ? "error" : "neutral"}
           helper={counts.down > 0 ? "Production unreachable" : "All sites online"}
-          icon={<AlertOctagon className="h-4 w-4" />}
+          icon={<WarningOctagon className="h-4 w-4" />}
         />
       </section>
 
@@ -192,7 +192,7 @@ export function DashboardClient({
           <div className="px-5 pb-2">
             <div className="flex flex-wrap items-center gap-3 pb-3">
               <div className="relative min-w-[240px] flex-1 max-w-md">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-3" />
+                <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-3" />
                 <Input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
@@ -235,7 +235,7 @@ export function DashboardClient({
                 <thead>
                   <tr className="text-left text-xs font-medium text-ink-3">
                     <ColHeader icon={<FolderOpen className="h-3.5 w-3.5" />} label="Project" className="px-6" />
-                    <ColHeader icon={<Activity className="h-3.5 w-3.5" />} label="Status" />
+                    <ColHeader icon={<Pulse className="h-3.5 w-3.5" />} label="Status" />
                     <ColHeader icon={<Calendar className="h-3.5 w-3.5" />} label="Last tested" />
                     <ColHeader icon={<Globe className="h-3.5 w-3.5" />} label="Uptime" />
                     <ColHeader icon={<Gauge className="h-3.5 w-3.5" />} label="Performance" />
@@ -321,7 +321,7 @@ export function DashboardClient({
                               aria-label="Edit project"
                               title="Edit"
                             >
-                              <Pencil className="h-4 w-4" />
+                              <PencilSimple className="h-4 w-4" />
                             </Link>
                           </div>
                         </td>

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { Play, Copy, Pencil, Trash2 } from "lucide-react";
+import { Play, Copy, PencilSimple, Trash } from "@phosphor-icons/react";
 
 export function ProjectActions({
   projectId,
@@ -100,7 +100,7 @@ export function ProjectActions({
       </button>
 
       <Link href={`/projects/${projectId}/edit`} className={secondaryClasses}>
-        <Pencil className="h-4 w-4" />
+        <PencilSimple className="h-4 w-4" />
         Edit
       </Link>
 
@@ -112,7 +112,7 @@ export function ProjectActions({
         disabled={isPending}
         className={dangerClasses}
       >
-        <Trash2 className="h-4 w-4" />
+        <Trash className="h-4 w-4" />
         Delete
       </button>
     </div>

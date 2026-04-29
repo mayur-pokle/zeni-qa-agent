@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Download, AlertTriangle, Globe, Activity, FileText } from "lucide-react";
+import { ArrowLeft, Download, Warning, Globe, Pulse, FileText } from "@phosphor-icons/react";
 import { PageChrome } from "@/components/ui/page-chrome";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { StatTile } from "@/components/ui/stat-tile";
@@ -127,14 +127,14 @@ export default async function QaRunDetailPage({
           value={failedPages}
           tone={failedPages > 0 ? "error" : "neutral"}
           helper={failedPages > 0 ? "Need immediate attention" : "All clear"}
-          icon={<AlertTriangle className="h-4 w-4" />}
+          icon={<Warning className="h-4 w-4" />}
         />
         <StatTile
           label="Warnings"
           value={warnedPages}
           tone={warnedPages > 0 ? "warning" : "neutral"}
           helper={warnedPages > 0 ? "Worth a look" : "Nothing flagged"}
-          icon={<Activity className="h-4 w-4" />}
+          icon={<Pulse className="h-4 w-4" />}
         />
         <StatTile
           label="Broken links"

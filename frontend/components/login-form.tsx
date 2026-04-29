@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeSlash } from "@phosphor-icons/react";
 
 export function LoginForm({ next }: { next?: string | null } = {}) {
   const router = useRouter();
@@ -94,7 +94,7 @@ export function LoginForm({ next }: { next?: string | null } = {}) {
             title={showPassword ? "Hide password" : "Show password"}
             className="absolute right-1 top-1 inline-flex h-8 w-8 items-center justify-center rounded-[6px] text-ink-3 transition-colors hover:bg-hover hover:text-ink"
           >
-            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            {showPassword ? <EyeSlash className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </button>
         </div>
       </label>

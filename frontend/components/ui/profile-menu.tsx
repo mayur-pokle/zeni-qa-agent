@@ -3,13 +3,13 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { Settings, LogOut } from "lucide-react";
+import { Gear, SignOut } from "@phosphor-icons/react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 /**
  * Avatar + dropdown menu in the top-right of every redesigned page.
  * Avatar shows the user's initials derived from their email. Click
- * opens a dropdown with the user's full email + Settings + Sign out.
+ * opens a dropdown with the user's full email + Gear + Sign out.
  * Sign out triggers a confirm dialog before actually clearing the
  * session.
  */
@@ -83,8 +83,8 @@ export function ProfileMenu({ email }: { email: string }) {
             onClick={() => setOpen(false)}
             className="flex items-center gap-2 px-4 py-2.5 text-sm text-ink hover:bg-hover"
           >
-            <Settings className="h-4 w-4 text-icon" />
-            Settings
+            <Gear className="h-4 w-4 text-icon" />
+            Gear
           </Link>
           <button
             type="button"
@@ -95,7 +95,7 @@ export function ProfileMenu({ email }: { email: string }) {
             }}
             className="flex w-full items-center gap-2 border-t border-line-2 px-4 py-2.5 text-left text-sm text-error hover:bg-tag-pink/40"
           >
-            <LogOut className="h-4 w-4" />
+            <SignOut className="h-4 w-4" />
             Sign out
           </button>
         </div>

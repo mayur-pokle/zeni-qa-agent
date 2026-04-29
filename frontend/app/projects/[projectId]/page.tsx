@@ -1,17 +1,17 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
-  Activity,
+  Pulse,
   Calendar,
-  ExternalLink,
+  ArrowSquareOut,
   Eye,
-  FileDown,
+  FileArrowDown,
   FileText,
   Gauge,
   Globe,
   Hash,
   PlayCircle
-} from "lucide-react";
+} from "@phosphor-icons/react";
 import { PageChrome } from "@/components/ui/page-chrome";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { StatTile } from "@/components/ui/stat-tile";
@@ -119,7 +119,7 @@ export default async function ProjectDetailPage({
               Last run <LocalTime value={project.lastRunAt} />
             </span>
           }
-          icon={<Activity className="h-4 w-4" />}
+          icon={<Pulse className="h-4 w-4" />}
         />
         <StatTile
           label="Health score"
@@ -198,7 +198,7 @@ function OverviewTab({ project }: { project: Project }) {
                   className="inline-flex items-center gap-1 text-ink hover:underline"
                 >
                   {project.productionUrl}
-                  <ExternalLink className="h-3 w-3 text-ink-3" />
+                  <ArrowSquareOut className="h-3 w-3 text-ink-3" />
                 </a>
               }
             />
@@ -213,7 +213,7 @@ function OverviewTab({ project }: { project: Project }) {
                     className="inline-flex items-center gap-1 text-ink hover:underline"
                   >
                     {project.stagingUrl}
-                    <ExternalLink className="h-3 w-3 text-ink-3" />
+                    <ArrowSquareOut className="h-3 w-3 text-ink-3" />
                   </a>
                 }
               />
@@ -263,7 +263,7 @@ function OverviewTab({ project }: { project: Project }) {
           title="Reports"
           actions={
             <Button href={`/api/reports/${project.id}`} variant="secondary" size="sm" download>
-              <FileDown className="h-4 w-4" />
+              <FileArrowDown className="h-4 w-4" />
               Download CSV
             </Button>
           }
@@ -296,7 +296,7 @@ function RunsTab({ project }: { project: Project }) {
           <thead>
             <tr className="text-left text-xs font-medium text-ink-3">
               <RunColHeader icon={<PlayCircle className="h-3.5 w-3.5" />} label="Run" className="px-6" />
-              <RunColHeader icon={<Activity className="h-3.5 w-3.5" />} label="Status" />
+              <RunColHeader icon={<Pulse className="h-3.5 w-3.5" />} label="Status" />
               <RunColHeader icon={<Gauge className="h-3.5 w-3.5" />} label="Performance" />
               <RunColHeader icon={<Hash className="h-3.5 w-3.5" />} label="SEO" />
               <RunColHeader icon={<Hash className="h-3.5 w-3.5" />} label="A11y" />

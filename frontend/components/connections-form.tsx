@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Activity, Bell, Mail } from "lucide-react";
+import { Pulse, Bell, Envelope } from "@phosphor-icons/react";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { Pill } from "@/components/ui/pill";
 import { Input } from "@/components/ui/input";
@@ -185,7 +185,7 @@ export function ConnectionsForm({ envDefaults }: Props) {
         <CardHeader
           title={
             <span className="inline-flex items-center gap-2">
-              <Activity className="h-4 w-4 text-icon" />
+              <Pulse className="h-4 w-4 text-icon" />
               UptimeRobot
             </span>
           }
@@ -219,7 +219,7 @@ export function ConnectionsForm({ envDefaults }: Props) {
         <CardHeader
           title={
             <span className="inline-flex items-center gap-2">
-              <Mail className="h-4 w-4 text-icon" />
+              <Envelope className="h-4 w-4 text-icon" />
               Email alerts
             </span>
           }
