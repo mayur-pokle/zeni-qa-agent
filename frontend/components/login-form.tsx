@@ -116,7 +116,7 @@ export function LoginForm({ next }: { next?: string | null } = {}) {
       <button
         type="submit"
         disabled={isPending}
-        className="inline-flex h-10 items-center justify-center gap-2 rounded-[8px] bg-brand px-4 text-sm font-medium !text-white transition-colors hover:bg-[#1D4ED8] active:bg-[#1E40AF] disabled:cursor-not-allowed disabled:opacity-60"
+        className="inline-flex h-10 items-center justify-center gap-2 rounded-[8px] bg-brand px-4 text-sm font-semibold !text-white transition-colors hover:bg-[#1D4ED8] active:bg-[#1E40AF] disabled:cursor-not-allowed disabled:opacity-60"
       >
         {isPending ? "Signing in…" : "Sign in"}
       </button>

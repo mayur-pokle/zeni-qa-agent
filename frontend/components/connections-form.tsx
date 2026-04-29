@@ -154,9 +154,9 @@ export function ConnectionsForm({ envDefaults }: Props) {
   }).length;
 
   const primaryBtn =
-    "inline-flex h-9 items-center gap-2 rounded-[8px] bg-brand px-3 text-sm font-medium !text-white transition-colors hover:bg-[#1D4ED8] active:bg-[#1E40AF] disabled:cursor-not-allowed disabled:opacity-60";
+    "inline-flex h-10 items-center gap-2 rounded-[8px] bg-brand px-4 text-sm font-semibold !text-white transition-colors hover:bg-[#1D4ED8] active:bg-[#1E40AF] disabled:cursor-not-allowed disabled:opacity-60";
   const secondaryBtn =
-    "inline-flex h-9 items-center gap-2 rounded-[8px] border border-line bg-surface px-3 text-sm font-medium text-ink hover:bg-hover hover:border-ink-3 disabled:cursor-not-allowed disabled:opacity-60";
+    "inline-flex h-10 items-center gap-2 rounded-[8px] border border-line bg-surface px-4 text-sm font-semibold text-ink hover:bg-hover hover:border-ink-3 disabled:cursor-not-allowed disabled:opacity-60";
 
   return (
     <div className="grid gap-4">

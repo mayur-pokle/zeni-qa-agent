@@ -48,8 +48,8 @@ export function ConfirmDialog({
 
   const confirmClasses =
     tone === "error"
-      ? "inline-flex h-10 items-center justify-center rounded-[8px] bg-error px-4 text-sm font-medium !text-white transition-colors hover:bg-[#DC2626] disabled:cursor-not-allowed disabled:opacity-60"
-      : "inline-flex h-10 items-center justify-center rounded-[8px] bg-brand px-4 text-sm font-medium !text-white transition-colors hover:bg-[#1D4ED8] disabled:cursor-not-allowed disabled:opacity-60";
+      ? "inline-flex h-10 items-center justify-center rounded-[8px] bg-error px-4 text-sm font-semibold !text-white transition-colors hover:bg-[#DC2626] disabled:cursor-not-allowed disabled:opacity-60"
+      : "inline-flex h-10 items-center justify-center rounded-[8px] bg-brand px-4 text-sm font-semibold !text-white transition-colors hover:bg-[#1D4ED8] disabled:cursor-not-allowed disabled:opacity-60";
 
   return (
     <div
@@ -75,7 +75,7 @@ export function ConfirmDialog({
             type="button"
             onClick={onClose}
             disabled={busy}
-            className="inline-flex h-10 items-center justify-center rounded-[8px] border border-line bg-surface px-4 text-sm font-medium text-ink hover:bg-hover hover:border-ink-3 disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex h-10 items-center justify-center rounded-[8px] border border-line bg-surface px-4 text-sm font-semibold text-ink hover:bg-hover hover:border-ink-3 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {cancelLabel}
           </button>

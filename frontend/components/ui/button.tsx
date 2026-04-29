@@ -18,7 +18,7 @@ export type ButtonVariant = "primary" | "secondary" | "ghost";
 export type ButtonSize = "md" | "sm";
 
 const BASE =
-  "inline-flex items-center justify-center gap-2 rounded-[8px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60";
+  "inline-flex items-center justify-center gap-2 rounded-[8px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60";
 
 const VARIANT_CLASSES: Record<ButtonVariant, string> = {
   // Force `!text-white` so the inherited body color (`--foreground`,

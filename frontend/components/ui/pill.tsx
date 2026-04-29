@@ -32,6 +32,12 @@ export function Pill({
   children: React.ReactNode;
   className?: string;
 }) {
+  // Title-case any plain-text children so callers can pass raw status
+  // strings (PRODUCTION, FAILED, "submitted · verified") and get a
+  // consistent "Production", "Failed", "Submitted · Verified" rendering
+  // without having to .toLowerCase() everywhere upstream.
+  const display = typeof children === "string" ? toTitleCase(children) : children;
+
   return (
     <span
       className={cn(
@@ -40,9 +46,24 @@ export function Pill({
         className
       )}
     >
-      {children}
+      {display}
     </span>
   );
+}
+
+function toTitleCase(input: string) {
+  return input
+    .toLowerCase()
+    .split(/(\s+)/)
+    .map((segment) =>
+      /^\s+$/.test(segment)
+        ? segment
+        : segment
+            .split("-")
+            .map((part) => (part.length > 0 ? part[0].toUpperCase() + part.slice(1) : part))
+            .join("-")
+    )
+    .join("");
 }
 
 /**

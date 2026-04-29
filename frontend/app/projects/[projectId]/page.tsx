@@ -262,7 +262,7 @@ function OverviewTab({ project }: { project: Project }) {
         <CardHeader
           title="Reports"
           actions={
-            <Button href={`/api/reports/${project.id}`} variant="secondary" size="sm" download>
+            <Button href={`/api/reports/${project.id}`} variant="secondary" download>
               <FileArrowDown className="h-4 w-4" />
               Download CSV
             </Button>
