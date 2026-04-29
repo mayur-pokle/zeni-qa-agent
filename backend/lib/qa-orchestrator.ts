@@ -3,7 +3,7 @@ import { executeQaRun } from "@/lib/qa";
 import { getProject } from "@/lib/db";
 import { getQaProgress, updateQaProgress } from "@/lib/progress";
 import { sendAlertEmail, sendSlackAlert } from "@/lib/alerts";
-import { buildQaAlert } from "@/lib/notifications";
+import { buildDemoFormAlert, buildQaAlert } from "@/lib/notifications";
 import { buildQaRunsCsv } from "@/lib/reports";
 import { slugify } from "@/lib/utils";
 
@@ -92,6 +92,27 @@ export async function executeQaWithAlerts(
       }).catch((err) => {
         console.warn("[slack] alert failed:", err instanceof Error ? err.message : err);
       });
+
+    }
+
+    // Dedicated demo-form alert. Fires as a SEPARATE Slack message
+    // (not appended to the regular run alert) so the team gets a
+    // clear, focused ping when the lead-capture form on /demo/request
+    // breaks. Intentionally outside the outer "status !== PASSED ||
+    // notifyOnCompletion" gate above — the demo form being broken
+    // matters even when the rest of the run is otherwise green.
+    if (project) {
+      const demoAlert = buildDemoFormAlert({ run, project, environment });
+      if (demoAlert) {
+        sendSlackAlert({
+          projectName: project.name,
+          title: demoAlert.subject,
+          body: demoAlert.slackFallback,
+          blocks: demoAlert.slackBlocks
+        }).catch((err) => {
+          console.warn("[slack] demo-form alert failed:", err instanceof Error ? err.message : err);
+        });
+      }
     }
 
     return { ok: true, runId: run.id, status: run.status };

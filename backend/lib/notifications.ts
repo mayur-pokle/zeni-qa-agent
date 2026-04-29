@@ -415,3 +415,157 @@ function truncateUrl(url: string, max = 50) {
   const stripped = url.replace(/^https?:\/\//, "");
   return stripped.length <= max ? stripped : stripped.slice(0, max - 1) + "…";
 }
+
+// ---------- Demo form dedicated alert ----------
+
+/**
+ * The /demo/request page on zeni.ai is the highest-stakes landing page
+ * we monitor — it's the lead-capture form. When it breaks, the page
+ * usually still scores fine on the aggregate run alert (404s and
+ * Lighthouse are unaffected), so the regular Slack post can bury the
+ * single most important failure in a sea of green checks.
+ *
+ * This helper returns a *separate* Slack payload for the demo form,
+ * sent alongside the regular alert, so the team gets a focused ping
+ * the moment the demo flow breaks.
+ *
+ * Triggers when, for the demo page only:
+ *   - the HubSpot embed is not detected at all, OR
+ *   - the embed is found but not visible, OR
+ *   - we attempted a deep submit and HubSpot did not confirm success.
+ *
+ * Returns null when the demo page wasn't tested in this run, or the
+ * form looks healthy.
+ */
+export type DemoFormAlertContent = {
+  subject: string;
+  slackBlocks: SlackBlock[];
+  slackFallback: string;
+} | null;
+
+// Match `/demo/request` (with or without trailing slash) on the path,
+// regardless of host — covers prod + any staging URL the user wires up.
+const DEMO_URL_PATTERN = /\/demo\/request\/?$/i;
+
+export function buildDemoFormAlert({
+  run,
+  project,
+  environment
+}: QaAlertInputs): DemoFormAlertContent {
+  const payload = (run.payload ?? {}) as QaExecutionPayload;
+  const pageResults = payload.pageResults ?? [];
+
+  const demoPage = pageResults.find((p) => {
+    try {
+      return DEMO_URL_PATTERN.test(new URL(p.url).pathname);
+    } catch {
+      return false;
+    }
+  });
+
+  if (!demoPage) return null;
+
+  const form = demoPage.hubspotForm;
+  const notFound = !form || !form.found;
+  const notVisible = !!form && form.found && form.visible === false;
+  const submitFailed = !!form && form.attempted && !form.succeeded;
+
+  if (!notFound && !notVisible && !submitFailed) return null;
+
+  const headline = notFound
+    ? "Demo form not detected"
+    : notVisible
+      ? "Demo form is hidden / not visible"
+      : "Demo form submission failed";
+
+  const detail = form?.detail ?? "No additional detail.";
+  const envLabel = environment === "PRODUCTION" ? "Production" : "Staging";
+
+  const subject = `[Demo Form Alert] ${project.name} ${envLabel} — ${headline}`;
+
+  const slackBlocks: SlackBlock[] = [
+    {
+      type: "header",
+      text: {
+        type: "plain_text",
+        text: `:rotating_light: Demo form alert — ${headline}`,
+        emoji: true
+      }
+    },
+    {
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text: `*${project.name}* — <${demoPage.url}|${demoPage.url}>`
+      }
+    },
+    {
+      type: "section",
+      fields: [
+        { type: "mrkdwn", text: `*Environment*\n${envLabel}` },
+        {
+          type: "mrkdwn",
+          text: `*Form state*\n${
+            notFound
+              ? "Not detected"
+              : notVisible
+                ? "Hidden / not visible"
+                : "Submitted, no success state"
+          }`
+        },
+        {
+          type: "mrkdwn",
+          text: `*Embed kind*\n${form?.embedKind ?? "—"}`
+        },
+        {
+          type: "mrkdwn",
+          text: `*HTTP*\n${demoPage.statusCode ?? "—"}`
+        }
+      ]
+    },
+    {
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text: `*Error message*\n${truncateUrl(detail, 480)}`
+      }
+    },
+    ...(form?.missingFields && form.missingFields.length > 0
+      ? [
+          {
+            type: "section",
+            text: {
+              type: "mrkdwn",
+              text: `*Missing/unmatched fields*\n${form.missingFields.join(", ")}`
+            }
+          } as SlackBlock
+        ]
+      : []),
+    { type: "divider" },
+    {
+      type: "actions",
+      elements: [
+        {
+          type: "button",
+          text: { type: "plain_text", text: "Open the form", emoji: true },
+          url: demoPage.url,
+          style: "danger"
+        },
+        {
+          type: "button",
+          text: { type: "plain_text", text: "View QA report", emoji: true },
+          url: `${frontendBaseUrl()}/projects/${project.id}/runs/${run.id}`
+        }
+      ]
+    }
+  ];
+
+  const slackFallback = [
+    `:rotating_light: Demo form alert — ${headline}`,
+    `${project.name} — ${envLabel}`,
+    demoPage.url,
+    `Error: ${detail}`
+  ].join("\n");
+
+  return { subject, slackBlocks, slackFallback };
+}
