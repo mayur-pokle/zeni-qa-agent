@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Pulse, Bell, Envelope } from "@phosphor-icons/react";
+import { Pulse, Bell, Envelope } from "@phosphor-icons/react/dist/ssr";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { Pill } from "@/components/ui/pill";
 import { Input } from "@/components/ui/input";

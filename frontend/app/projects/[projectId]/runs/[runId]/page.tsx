@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Download, Warning, Globe, Pulse, FileText } from "@phosphor-icons/react";
+import { ArrowLeft, Download, Warning, Globe, Pulse, FileText } from "@phosphor-icons/react/dist/ssr";
 import { PageChrome } from "@/components/ui/page-chrome";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { StatTile } from "@/components/ui/stat-tile";

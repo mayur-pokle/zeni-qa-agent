@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { Play, Copy, PencilSimple, Trash } from "@phosphor-icons/react";
+import { Play, Copy, PencilSimple, Trash } from "@phosphor-icons/react/dist/ssr";
 
 export function ProjectActions({
   projectId,

@@ -16,7 +16,7 @@ import {
   Calendar,
   Globe,
   Gauge
-} from "@phosphor-icons/react";
+} from "@phosphor-icons/react/dist/ssr";
 import { PageChrome } from "@/components/ui/page-chrome";
 import { Card, CardHeader } from "@/components/ui/card";
 import { StatTile } from "@/components/ui/stat-tile";

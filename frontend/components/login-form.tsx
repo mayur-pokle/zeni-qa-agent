@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Eye, EyeSlash } from "@phosphor-icons/react";
+import { Eye, EyeSlash } from "@phosphor-icons/react/dist/ssr";
 
 export function LoginForm({ next }: { next?: string | null } = {}) {
   const router = useRouter();
