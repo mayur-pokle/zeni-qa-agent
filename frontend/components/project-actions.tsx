@@ -63,12 +63,14 @@ export function ProjectActions({
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      {/* Monitoring toggle as a labeled switch */}
+      {/* Monitoring toggle as a labeled switch. Same shape and ink as
+          the other secondary buttons (h-10, text-sm font-semibold,
+          text-ink) so the row reads as one consistent set. */}
       <button
         type="button"
         onClick={() => runRequest(`/api/projects/${projectId}/toggle-monitoring`)}
         disabled={isPending}
-        className="inline-flex h-10 items-center gap-2 rounded-[8px] border border-line bg-surface px-4 text-sm font-semibold text-ink-2 hover:bg-hover"
+        className="inline-flex h-10 items-center gap-2 rounded-[8px] border border-line bg-surface px-4 text-sm font-semibold text-ink hover:bg-hover hover:border-ink-3 disabled:cursor-not-allowed disabled:opacity-60"
         title={monitoringActive ? "Click to pause monitoring" : "Click to enable monitoring"}
       >
         <span
