@@ -47,7 +47,7 @@ export function Tabs({
               aria-selected={isActive}
               onClick={() => setActive(tab.value)}
               className={cn(
-                "relative inline-flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors",
+                "relative inline-flex items-center gap-2 px-4 py-3 text-sm font-semibold transition-colors",
                 isActive ? "text-ink" : "text-ink-2 hover:text-ink"
               )}
             >

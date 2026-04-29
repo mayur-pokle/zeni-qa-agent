@@ -38,7 +38,7 @@ export function FilterTabs({
             type="button"
             onClick={() => onChange(tab.value)}
             className={cn(
-              "relative inline-flex items-center gap-2 px-3 py-2 text-sm font-medium transition-colors",
+              "relative inline-flex items-center gap-2 px-3 py-2 text-sm font-semibold transition-colors",
               isActive ? "text-ink" : "text-ink-2 hover:text-ink"
             )}
           >

@@ -61,7 +61,7 @@ export function ProfileMenu({ email }: { email: string }) {
         aria-expanded={open}
         aria-haspopup="menu"
         title={email}
-        className="grid h-9 w-9 place-items-center rounded-full bg-tag-blue text-xs font-semibold text-[#1D4ED8] outline-none transition-shadow hover:ring-2 hover:ring-brand/15 focus:ring-2 focus:ring-brand/30"
+        className="grid h-9 w-9 place-items-center rounded-full bg-tag-blue text-sm font-semibold text-[#1D4ED8] outline-none transition-shadow hover:ring-2 hover:ring-brand/15 focus:ring-2 focus:ring-brand/30"
       >
         {initialsFor(email)}
       </button>
@@ -81,7 +81,7 @@ export function ProfileMenu({ email }: { email: string }) {
             href="/settings"
             role="menuitem"
             onClick={() => setOpen(false)}
-            className="flex items-center gap-2 px-4 py-2.5 text-sm text-ink hover:bg-hover"
+            className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-ink hover:bg-hover"
           >
             <Gear className="h-4 w-4 text-icon" />
             Settings
@@ -93,7 +93,7 @@ export function ProfileMenu({ email }: { email: string }) {
               setConfirmOpen(true);
               setOpen(false);
             }}
-            className="flex w-full items-center gap-2 border-t border-line-2 px-4 py-2.5 text-left text-sm text-error hover:bg-tag-pink/40"
+            className="flex w-full items-center gap-2 border-t border-line-2 px-4 py-2.5 text-left text-sm font-semibold text-error hover:bg-tag-pink/40"
           >
             <SignOut className="h-4 w-4" />
             Sign out
