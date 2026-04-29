@@ -19,7 +19,7 @@ export default async function DashboardPage({
       <div className="min-h-screen bg-canvas text-ink">
         <div className="mx-auto flex min-h-screen max-w-md items-center px-6 py-10">
           <div className="w-full">
-            <div className="mb-6 flex items-center gap-3">
+            <div className="mb-6 flex items-center justify-center gap-3">
               <Image
                 src="/flowtest-logo.svg"
                 alt="Flowtest"

@@ -31,17 +31,10 @@ export function PageChrome({
   return (
     <div className="min-h-screen bg-canvas text-ink">
       <header className="border-b border-line-2 bg-surface">
-        {/*
-          3-column grid keeps the logo in the geometric center of the
-          bar even when the profile menu's width changes (initials of
-          one vs two letters). The empty left cell mirrors the right
-          cell so the centre column stays balanced.
-        */}
-        <div className="mx-auto grid max-w-7xl grid-cols-[1fr_auto_1fr] items-center gap-4 px-6 py-3">
-          <span aria-hidden="true" />
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-6 py-3">
           <Link
             href="/"
-            className="inline-flex items-center justify-self-center rounded-[6px] outline-none focus:ring-2 focus:ring-brand/30"
+            className="inline-flex items-center rounded-[6px] outline-none focus:ring-2 focus:ring-brand/30"
             aria-label="Flowtest dashboard"
           >
             <Image
@@ -53,9 +46,7 @@ export function PageChrome({
               priority
             />
           </Link>
-          <div className="justify-self-end">
-            {userEmail ? <ProfileMenu email={userEmail} /> : null}
-          </div>
+          {userEmail ? <ProfileMenu email={userEmail} /> : null}
         </div>
       </header>
 
