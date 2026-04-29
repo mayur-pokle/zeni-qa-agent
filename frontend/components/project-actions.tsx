@@ -49,17 +49,20 @@ export function ProjectActions({
     });
   }
 
+  // !text-sm and !font-semibold force 14px / 600 even if some
+  // cascading body/preflight rule tries to win specificity. Belt-and-
+  // suspenders so the action row never reads as a different size.
   const secondaryClasses =
-    "inline-flex h-10 items-center gap-2 rounded-[8px] border border-line bg-surface px-4 text-sm font-semibold text-ink hover:bg-hover hover:border-ink-3 disabled:cursor-not-allowed disabled:opacity-60";
+    "inline-flex h-10 items-center gap-2 rounded-[8px] border border-line bg-surface px-4 !text-sm !font-semibold text-ink hover:bg-hover hover:border-ink-3 disabled:cursor-not-allowed disabled:opacity-60";
 
   const primaryClasses =
-    "inline-flex h-10 items-center gap-2 rounded-[8px] bg-brand px-4 text-sm font-semibold !text-white hover:bg-[#1D4ED8] active:bg-[#1E40AF] disabled:cursor-not-allowed disabled:opacity-60";
+    "inline-flex h-10 items-center gap-2 rounded-[8px] bg-brand px-4 !text-sm !font-semibold !text-white hover:bg-[#1D4ED8] active:bg-[#1E40AF] disabled:cursor-not-allowed disabled:opacity-60";
 
   // Delete is destructive and must read as such even from a glance.
   // Solid red bg with white text and icon — same shape as the primary
   // CTA so size and rhythm stay consistent in the action row.
   const dangerClasses =
-    "inline-flex h-10 items-center gap-2 rounded-[8px] bg-error px-4 text-sm font-semibold !text-white hover:bg-[#DC2626] active:bg-[#B91C1C] disabled:cursor-not-allowed disabled:opacity-60";
+    "inline-flex h-10 items-center gap-2 rounded-[8px] bg-error px-4 !text-sm !font-semibold !text-white hover:bg-[#DC2626] active:bg-[#B91C1C] disabled:cursor-not-allowed disabled:opacity-60";
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -70,7 +73,7 @@ export function ProjectActions({
         type="button"
         onClick={() => runRequest(`/api/projects/${projectId}/toggle-monitoring`)}
         disabled={isPending}
-        className="inline-flex h-10 items-center gap-2 rounded-[8px] border border-line bg-surface px-4 text-sm font-semibold text-ink hover:bg-hover hover:border-ink-3 disabled:cursor-not-allowed disabled:opacity-60"
+        className="inline-flex h-10 items-center gap-2 rounded-[8px] border border-line bg-surface px-4 !text-sm !font-semibold text-ink hover:bg-hover hover:border-ink-3 disabled:cursor-not-allowed disabled:opacity-60"
         title={monitoringActive ? "Click to pause monitoring" : "Click to enable monitoring"}
       >
         <span
